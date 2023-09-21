@@ -1,6 +1,6 @@
 import sys
 #from PyQt5.QtGui import
-from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QApplication, QLabel, QLineEdit, QPushButton, QMessageBox
+from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QApplication, QLabel, QLineEdit, QPushButton, QMessageBox, QFrame
 
 class Login(QMainWindow):
     def __init__(self):
@@ -99,9 +99,6 @@ class InfoBox(QMessageBox):
         self.exec_()
 
 
-
-
-
 class MainWindow(QMainWindow):
 
     def __init__(self):
@@ -110,13 +107,20 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(widget)
         grid = QGridLayout()
         widget.setLayout(grid)
+        self.setGeometry(100, 100, 1000, 300)
 
         self.setWindowTitle("YeGrec")
+
+        self.frame = QFrame(self)
+        self.frame.setStyleSheet(" border: 2px solid #000000;")
+        self.frame.setGeometry(50, 50, 300, 150)
+
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
 
+    #window = MainWindow()
     window = Login()
     window.show()
 
