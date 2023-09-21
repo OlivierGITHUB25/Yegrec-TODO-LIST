@@ -1,0 +1,19 @@
+[
+  {
+    "username": "admin",
+    "password": "toto3"
+  },
+  {
+    "username": "morgan",
+    "password": "toto2"
+  },
+  {
+    "username": "val",
+    "password": "toto1"
+  },
+  {
+    "username": "root",
+    "password": "$2b$12$loU4eXWpOcQIfAzgE8jNOuamcxxVT6YVUVaURUt/Rkbc4Lnq640/."
+  }
+]
+
