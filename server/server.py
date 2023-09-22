@@ -24,9 +24,11 @@ def login(conn, output):
         DB = json.load(user_DB)
         for c in DB:
             if c["username"] == username:
-                if get_hash(password, c["password"]):
+                if check_hash(password, c["password"]):
                     print(f"User {username} is logged in !")
                     return 0
+                else:
+                    print(f"{username} enter wrong password")
         return -1
 
 
@@ -34,9 +36,8 @@ def sign_up(conn, output):
     pass
 
 
-def get_hash(password, hash):                   ##A FIXER
-    print(password, hash)
-    if bcrypt.checkpw(password, hash):
+def check_hash(password, hash):
+    if bcrypt.checkpw(password.encode('utf8'), hash.encode('utf8')):
         return True
     else:
         return False
