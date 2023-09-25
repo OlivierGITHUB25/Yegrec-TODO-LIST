@@ -13,63 +13,72 @@ server.listen(5)
 secure_sock = context.wrap_socket(server, server_side=True)
 
 
-def login(conn, output):
-    try:
-        for c in output:
-            username = c["username"]
-            password = c["password"]
-    except KeyError:
-        print("FORMAT JSON INVALIDE")
-    with open("users.json", "r") as user_DB:
-        DB = json.load(user_DB)
-        for c in DB:
-            if c["username"] == username:
-                if check_hash(password, c["password"]):
-                    print(f"User {username} is logged in !")
-                    return 0
-                else:
-                    print(f"{username} enter wrong password")
-        return -1
+class Client:
+    def __init__(self, conn):
+        self.__conn = conn
 
+    def run(self):
+        received_msg = ""
+        previous_msg = ""
+        action = ""
 
-def sign_up(conn, output):
-    pass
+        while action != "disconnect":
+            buffer = self.__conn.recv(1024)
+            received_message = buffer.decode('utf-8')
+            if received_message != previous_msg:
+                try:
+                    output = json.loads(received_message)
+                    for item in output:
+                        action = item["action"]
+                        received_message = previous_msg
+                except KeyError:
+                    print("Invalid json format")
+                    received_message = previous_msg
+                    continue
+                except json.decoder.JSONDecodeError:
+                    print("Invalid json format")
+                    received_message = previous_msg
+                    continue
 
+                if action == "login":
+                    self.login(output)
+                elif action == "sign_up":
+                    self.sign_up(output)
 
-def check_hash(password, hash):
-    if bcrypt.checkpw(password.encode('utf8'), hash.encode('utf8')):
-        return True
-    else:
-        return False
+    def login(self, output):
+        password = ""
+        username = ""
 
+        try:
+            for item in output:
+                username = item["username"]
+                password = item["password"]
+        except KeyError:
+            print("Invalid json format")
+            return -1
+        with open("users.json", "r") as user_DB:
+            _user_DB = json.load(user_DB)
+            for item in _user_DB:
+                if item["username"] == username:
+                    if bcrypt.checkpw(password.encode('utf8'), item["password"].encode('utf8')):
+                        print(f"User {username} is logged in !")
+                        self.__conn.send(self.json_maker("authorized").encode('utf-8'))
+                        return 0
+                    else:
+                        print(f"{username} enter wrong password")
 
-def thread_socket(conn, ip, port):
-    print(f"Client {ip}:{port} is connected !")
+        self.__conn.send(self.json_maker("unauthorized").encode('utf-8'))
 
-    received_message = ""
-    old_msg = ""
+    def sign_up(self, output):
+        pass
 
-    while True:
-        buffer = conn.recv(1024)
-        received_message = buffer.decode('utf-8')
-
-        if received_message != old_msg:
-            try:
-                output = json.loads(received_message)
-                for c in output:
-                    action = c["action"]
-                    received_message = old_msg
-            except KeyError:
-                print("FORMAT JSON INVALIDE")
-                received_message = old_msg
-                continue
-
-            if action == "login":
-                login(conn, output)
-            elif action == "sign_up":
-                sign_up(conn, output)
-            else:
-                print("FORMAT JSON INVALIDE")
+    @staticmethod
+    def json_maker(from_server):
+        return json.dumps([
+            {
+                "FromServer": from_server
+            }
+        ])
 
 
 if __name__ == "__main__":
@@ -83,7 +92,8 @@ if __name__ == "__main__":
             print('Client aborted connection')
             continue
 
-        thread = threading.Thread(target=thread_socket, args=[conn, ip, port])
+        print(f"Client {ip}:{port} is connected !")
+        client = Client(conn)
+        thread = threading.Thread(target=client.run())
         thread.start()
         open_sockets.append(thread)
-

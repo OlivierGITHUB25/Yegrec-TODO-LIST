@@ -15,7 +15,14 @@ with socket.create_connection((hostname, 5000)) as sock:
             {
                 "action": "login",
                 "username": "root",
-                "password": "toto"
+                "password": "tot5o"
             }
         ])
         conn.send(credentials.encode('utf-8'))
+        time.sleep(1)
+        done = json.dumps([
+            {
+                "action": "disconnect"
+            }
+        ])
+        conn.send(done.encode('utf-8'))
