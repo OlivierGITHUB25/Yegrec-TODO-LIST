@@ -1,19 +1,14 @@
 [
   {
-    "username": "admin",
-    "password": "toto3"
-  },
-  {
-    "username": "morgan",
-    "password": "toto2"
-  },
-  {
-    "username": "val",
-    "password": "toto1"
+    "username": "username5",
+    "password": "$2b$12$vVdmgJPmsyMEhmTjSRBmP.BcDx/1whDav5lXp2JqKmSn/xktZHenK"
   },
   {
     "username": "root",
-    "password": "$2b$12$loU4eXWpOcQIfAzgE8jNOuamcxxVT6YVUVaURUt/Rkbc4Lnq640/."
+    "password": "$2b$12$uYGKv3H8m/a8QvVddWTuPeiLe/78zAoxt5y2E2Aj5dzp7Q6HNYnLy"
+  },
+  {
+    "username": "rootoo",
+    "password": "$2b$12$o1pDdEHXEp4K2tepxIrcF.6ChQUV4M40J.ewMJEat4n7XBDIibDhq"
   }
 ]
-

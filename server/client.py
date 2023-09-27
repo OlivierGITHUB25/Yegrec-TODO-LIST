@@ -13,16 +13,10 @@ with socket.create_connection((hostname, 5000)) as sock:
         time.sleep(1)
         credentials = json.dumps([
             {
-                "action": "login",
-                "username": "root",
-                "password": "tot5o"
+                "action": "sign_up",
+                "username": "rootoo",
+                "password": "azerty68"
             }
         ])
         conn.send(credentials.encode('utf-8'))
-        time.sleep(1)
-        done = json.dumps([
-            {
-                "action": "disconnect"
-            }
-        ])
-        conn.send(done.encode('utf-8'))
+
