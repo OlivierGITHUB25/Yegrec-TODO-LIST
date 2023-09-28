@@ -1,7 +1,5 @@
 import sys
-from PyQt5.QtCore import Qt, QSize
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QApplication, QLabel, QLineEdit, QPushButton, QMessageBox, QFrame, QScrollArea, QVBoxLayout, QFormLayout, QGroupBox
+from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QApplication, QLabel, QLineEdit, QPushButton, QMessageBox, QFrame, QScrollArea, QVBoxLayout, QFormLayout, QGroupBox, QComboBox
 
 class Login(QMainWindow):
     def __init__(self):
@@ -112,10 +110,6 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("YeGrec")
 
-        #self.frame = QFrame(self)
-        #self.frame.setStyleSheet(" border: 2px solid #000000;")
-        #self.frame.setGeometry(50, 50, 300, 150)
-
         self.formLayout1 = QFormLayout()
         self.groupBox1 = QGroupBox()
 
@@ -140,8 +134,18 @@ class MainWindow(QMainWindow):
         self.layout2 = QVBoxLayout(self)
         self.layout2.addWidget(self.scroll2)
 
-        grid.addWidget(self.scroll1, 1, 1)
-        grid.addWidget(self.scroll2, 2, 1)
+        self.bouton1 = QPushButton(self)
+        self.bouton1.setText("Créer une tâche")
+        self.bouton1.clicked.connect(self.tache)
+
+        grid.addWidget(self.bouton1, 1, 1)
+        grid.addWidget(self.scroll1, 2, 1)
+        grid.addWidget(self.scroll2, 3, 1)
+
+    def tache(self):
+        self.window2 = Tache()
+        self.window2.show()
+
 
         for n in range(100):
             label1 = QLabel("YOYOYOYO")
@@ -151,6 +155,35 @@ class MainWindow(QMainWindow):
             label2 = QLabel("YOYOYOYO")
             self.formLayout2.addRow(label2)
 
+class Tache(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        widget = QWidget()
+        self.setCentralWidget(widget)
+        grid = QGridLayout()
+        widget.setLayout(grid)
+
+        self.setWindowTitle("YeGrec Tâche")
+
+        self.lbl1 = QLabel(self)
+        self.lbl1.setText("Attribuer la tâche à quel utilisateur")
+        self.combobox = QComboBox()
+
+        self.lbl2 = QLabel(self)
+        self.lbl2.setText("nom de la tâche:")
+        self.champ2 = QLineEdit(self)
+        self.champ2.setEchoMode(QLineEdit.Password)
+
+        self.lbl3 = QLabel(self)
+        self.lbl3.setText("priorité")
+        self.combobox2 = QComboBox()
+
+        grid.addWidget(self.lbl1, 1, 1)
+        grid.addWidget(self.combobox, 2, 1)
+        grid.addWidget(self.lbl2, 3, 1)
+        grid.addWidget(self.champ2, 4, 1)
+        grid.addWidget(self.lbl3, 5, 1)
+        grid.addWidget(self.combobox2, 6, 1)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
