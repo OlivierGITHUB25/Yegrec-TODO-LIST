@@ -1,5 +1,6 @@
 import sys
-from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QApplication, QLabel, QLineEdit, QPushButton, QMessageBox, QFrame, QScrollArea, QVBoxLayout, QFormLayout, QGroupBox, QComboBox
+from PyQt5.QtCore import QDateTime
+from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QApplication, QLabel, QLineEdit, QPushButton, QMessageBox, QFrame, QScrollArea, QVBoxLayout, QFormLayout, QGroupBox, QComboBox, QDateEdit
 
 class Login(QMainWindow):
     def __init__(self):
@@ -177,6 +178,9 @@ class Tache(QMainWindow):
         self.lbl3 = QLabel(self)
         self.lbl3.setText("priorité")
         self.combobox2 = QComboBox()
+        self.combobox2.addItems(['faible', 'moyenne', 'haut'])
+
+        self.date = QDateEdit(self, calendarPopup=True)
 
         grid.addWidget(self.lbl1, 1, 1)
         grid.addWidget(self.combobox, 2, 1)
@@ -184,6 +188,7 @@ class Tache(QMainWindow):
         grid.addWidget(self.champ2, 4, 1)
         grid.addWidget(self.lbl3, 5, 1)
         grid.addWidget(self.combobox2, 6, 1)
+        grid.addWidget(self.date, 7, 1)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
