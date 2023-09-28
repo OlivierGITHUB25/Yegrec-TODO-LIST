@@ -7,9 +7,19 @@ Installation de YeGrec
 
 Windows
 ^^^^^^^
+Bonjour voilà comment on installe ça chacal sur Windows
+
+.. code-block:: git
+
+   git clone https://github.com/TheWilli67/YeGrec
 
 Linux
 ^^^^^
+Bonjour voilà comment on installe ça chacal sur linux
+
+.. code-block:: git
+
+   git clone https://github.com/TheWilli67/YeGrec
 
 MacOS
 ^^^^^
