@@ -19,7 +19,12 @@ with socket.create_connection((hostname, 5000)) as sock:
             }
         ])
         conn.send(credentials.encode('utf-8'))
-
+        credentials = json.dumps([
+            {
+                "client": "get_tasks",
+            }
+        ])
+        conn.send(credentials.encode('utf-8'))
         msg = ""
 
         buffer = conn.recv(1024)
