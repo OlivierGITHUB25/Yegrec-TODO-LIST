@@ -10,9 +10,10 @@ import re
 
 
 class Client:
-    def __init__(self, conn, cursor):
+    def __init__(self, conn, cursor, database):
         self.__conn = conn
         self.__cursor = cursor
+        self.__database = database
         self.__auth = False
         self.__user = ""
 
@@ -28,15 +29,14 @@ class Client:
                     output = json.loads(received_message)
                     for item in output:
                         client_action = item["client"]
-                        previous_msg = received_message
                 except KeyError:
                     print("Invalid json format")
-                    previous_msg = received_message
                     continue
                 except json.decoder.JSONDecodeError:
-                    print("Invalid json format")
-                    previous_msg = received_message
+                    print("Invalid json format - UNKNOWN ERROR")
                     continue
+                finally:
+                    previous_msg = received_message
 
                 if client_action == "login":
                     self.login(output)
@@ -63,25 +63,35 @@ class Client:
                 print('Client aborted connection')
             return -1
 
-        with open("users.json", "r") as user_DB:
-            _user_DB = json.load(user_DB)
-            for item in _user_DB:
-                if item["username"] == username:
-                    if bcrypt.checkpw(password.encode('utf8'), item["password"].encode('utf8')):
-                        print(f"User {username} is logged in !")
-                        try:
-                            self.__auth = True
-                            self.__user = username
-                            self.__conn.send(self.json_maker("response", "yes").encode('utf-8'))
-                        except ssl.SSLEOFError:
-                            print('Client aborted connection')
-                        return 0
-                    else:
-                        print(f"{username} enter wrong password")
-                        try:
-                            self.__conn.send(self.json_maker("response", "no").encode('utf-8'))
-                        except ssl.SSLEOFError:
-                            print('Client aborted connection')
+        try:
+            self.__cursor.execute("SELECT * FROM user")
+        except:
+            print("Internal error : Can't create entry")
+            try:
+                self.__conn.send(self.json_maker("response", "yes", error="InternalError").encode('utf-8'))
+            except ssl.SSLEOFError:
+                print('Client aborted connection')
+            finally:
+                return -1
+
+        for item in self.__cursor:
+            if item[1] == username:
+                if bcrypt.checkpw(password.encode('utf8'), item[2].encode('utf8')):
+                    print(f"User {username} is logged in !")
+                    try:
+                        self.__auth = True
+                        self.__user = item[1]
+                        self.__conn.send(self.json_maker("response", "yes").encode('utf-8'))
+                    except ssl.SSLEOFError:
+                        print('Client aborted connection')
+                    return 0
+                else:
+                    print(f"{item[1]} enter wrong password")
+                    try:
+                        self.__conn.send(self.json_maker("response", "no").encode('utf-8'))
+                    except ssl.SSLEOFError:
+                        print('Client aborted connection')
+
         try:
             self.__conn.send(self.json_maker("response", "no").encode('utf-8'))
         except ssl.SSLEOFError:
@@ -103,16 +113,23 @@ class Client:
                 print('Client aborted connection')
             return -1
 
-        with open("users.json", "r") as user_DB:
+        try:
+            self.__cursor.execute("SELECT * FROM user")
+        except:
+            print("Internal error : Can't create entry")
             try:
-                _user_DB = json.load(user_DB)
-            except json.decoder.JSONDecodeError:
-                _user_DB = []
+                self.__conn.send(self.json_maker("response", "yes", error="InternalError").encode('utf-8'))
+            except ssl.SSLEOFError:
+                print('Client aborted connection')
+            finally:
+                return -1
 
-        for item in _user_DB:
-            if item["username"] == username:
+        for item in self.__cursor:
+            if item[1] == username:
                 print("Someone try to create an account with an existing username")
                 try:
+                    username = item[1]
+                    password = item[2]
                     self.__conn.send(self.json_maker("response", "yes", "AccountAlreadyExist").encode('utf-8'))
                 except ssl.SSLEOFError:
                     print('Client aborted connection')
@@ -121,13 +138,22 @@ class Client:
         if re.search(r"^[a-zA-Z-0-9]+$", username):
             if 3 < len(username) < 32:
                 if 7 < len(password) < 32:
-                    with open("users.json", "w") as user_DB:
-                        password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-                        _user_DB.append({
-                            "username": username,
-                            "password": password_hash.decode('utf-8')
-                        })
-                        json.dump(_user_DB, user_DB, indent=2)
+                    password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+                    sql = "INSERT INTO user (username, password) VALUES (%s, %s)"
+                    try:
+                        self.__cursor.execute(sql, (username, password_hash.decode('utf-8')))
+                        self.__database.commit()
+                    except:
+                        print("Internal error : Can't create entry")
+                        try:
+                            self.__conn.send(self.json_maker("response", "yes", error="InternalError").encode('utf-8'))
+                        except ssl.SSLEOFError:
+                            print('Client aborted connection')
+                        finally:
+                            return -1
+
+                    print(f"User {username} has been created")
+
                     try:
                         self.__conn.send(self.json_maker("response", "yes").encode('utf-8'))
                     except ssl.SSLEOFError:
@@ -153,10 +179,10 @@ class Client:
 
     def get_tasks(self, output):
         if self.__auth:
-            # RETOURNER LA LISTE DES TACHES
+            # RETURN_TASK_LIST
             pass
         else:
-            print("User is not authentificated")
+            print("User is not authenticated")
             try:
                 self.__conn.send(self.json_maker("response", "no", "NotAuthorized").encode('utf-8'))
             except ssl.SSLEOFError:
@@ -199,11 +225,11 @@ if __name__ == "__main__":
 
     try:
         database = mysql.connector.connect(
-            host="10.128.200.7",
+            host="127.0.0.1",
             port="3306",
-            user="sae52",
-            password="Sae52rt31",
-            database="mydb"
+            user="root",
+            password="toto",
+            database="yegrec"
         )
         cursor = database.cursor()
     except mysql.connector.errors.DatabaseError:
@@ -212,7 +238,7 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     print(Fore.GREEN + "OK" + Style.RESET_ALL)
-    
+
     while True:
         print("Waiting for connection...")
         try:
@@ -222,7 +248,7 @@ if __name__ == "__main__":
             continue
 
         print(f"Client {ip}:{port} is connected !")
-        client = Client(conn, cursor)
+        client = Client(conn, cursor, database)
         thread = threading.Thread(target=client.run())
         thread.start()
         open_sockets.append(thread)

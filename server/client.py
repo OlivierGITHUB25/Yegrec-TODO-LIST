@@ -14,28 +14,29 @@ with socket.create_connection((hostname, 5000)) as sock:
         credentials = json.dumps([
             {
                 "client": "login",
-                "username": "Valentin",
-                "password": "azerty68"
+                "username": "rootoo",
+                "password": "totototo"
             }
         ])
         conn.send(credentials.encode('utf-8'))
-        credentials = json.dumps([
-            {
-                "client": "get_tasks",
-            }
-        ])
-        conn.send(credentials.encode('utf-8'))
-        msg = ""
 
+        # credentials = json.dumps([
+        #     {
+        #         "client": "get_tasks",
+        #     }
+        # ])
+        # conn.send(credentials.encode('utf-8'))
+
+        msg = ""
         buffer = conn.recv(1024)
         rc = buffer.decode('utf-8')
         if rc != msg:
             print(rc)
             msg = rc
 
-        conn.send(json.dumps([
-            {
-                "client": "disconnect"
-            }
-        ]).encode('utf-8'))
+        # conn.send(json.dumps([
+        #     {
+        #         "client": "disconnect"
+        #     }
+        # ]).encode('utf-8'))
 
