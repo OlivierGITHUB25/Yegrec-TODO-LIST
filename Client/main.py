@@ -1,6 +1,5 @@
 import sys
-#from PyQt5.QtGui import
-from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QApplication, QLabel, QLineEdit, QPushButton, QMessageBox, QFrame
+from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QApplication, QLabel, QLineEdit, QPushButton, QMessageBox, QFrame, QScrollArea, QVBoxLayout, QFormLayout, QGroupBox, QComboBox
 
 class Login(QMainWindow):
     def __init__(self):
@@ -83,8 +82,8 @@ class User(QMainWindow):
         psw1 = self.champ2.text()
         psw2 = self.champ3.text()
 
-        if psw1 == psw2 :
-            InfoBox("erreur mots de passe identique", QMessageBox.Icon.Warning)
+        if psw1 != psw2 :
+            InfoBox("erreur mots de passe pas identique", QMessageBox.Icon.Warning)
         else:
             print("test")
             self.close()
@@ -111,17 +110,86 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("YeGrec")
 
-        self.frame = QFrame(self)
-        self.frame.setStyleSheet(" border: 2px solid #000000;")
-        self.frame.setGeometry(50, 50, 300, 150)
+        self.formLayout1 = QFormLayout()
+        self.groupBox1 = QGroupBox()
+
+        self.formLayout2 = QFormLayout()
+        self.groupBox2 = QGroupBox()
+
+        self.groupBox1.setLayout(self.formLayout1)
+
+        self.scroll1 = QScrollArea()
+        self.scroll1.setWidget(self.groupBox1)
+        self.scroll1.setWidgetResizable(True)
+
+        self.layout1 = QVBoxLayout(self)
+        self.layout1.addWidget(self.scroll1)
+
+        self.groupBox2.setLayout(self.formLayout2)
+
+        self.scroll2 = QScrollArea()
+        self.scroll2.setWidget(self.groupBox2)
+        self.scroll2.setWidgetResizable(True)
+
+        self.layout2 = QVBoxLayout(self)
+        self.layout2.addWidget(self.scroll2)
+
+        self.bouton1 = QPushButton(self)
+        self.bouton1.setText("Créer une tâche")
+        self.bouton1.clicked.connect(self.tache)
+
+        grid.addWidget(self.bouton1, 1, 1)
+        grid.addWidget(self.scroll1, 2, 1)
+        grid.addWidget(self.scroll2, 3, 1)
+
+    def tache(self):
+        self.window2 = Tache()
+        self.window2.show()
 
 
+        for n in range(100):
+            label1 = QLabel("YOYOYOYO")
+            self.formLayout1.addRow(label1)
+
+        for n in range(100):
+            label2 = QLabel("YOYOYOYO")
+            self.formLayout2.addRow(label2)
+
+class Tache(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        widget = QWidget()
+        self.setCentralWidget(widget)
+        grid = QGridLayout()
+        widget.setLayout(grid)
+
+        self.setWindowTitle("YeGrec Tâche")
+
+        self.lbl1 = QLabel(self)
+        self.lbl1.setText("Attribuer la tâche à quel utilisateur")
+        self.combobox = QComboBox()
+
+        self.lbl2 = QLabel(self)
+        self.lbl2.setText("nom de la tâche:")
+        self.champ2 = QLineEdit(self)
+        self.champ2.setEchoMode(QLineEdit.Password)
+
+        self.lbl3 = QLabel(self)
+        self.lbl3.setText("priorité")
+        self.combobox2 = QComboBox()
+
+        grid.addWidget(self.lbl1, 1, 1)
+        grid.addWidget(self.combobox, 2, 1)
+        grid.addWidget(self.lbl2, 3, 1)
+        grid.addWidget(self.champ2, 4, 1)
+        grid.addWidget(self.lbl3, 5, 1)
+        grid.addWidget(self.combobox2, 6, 1)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
 
-    #window = MainWindow()
-    window = Login()
+    window = MainWindow()
+    #window = Login()
     window.show()
 
     app.exec()
