@@ -1,17 +1,22 @@
+from colorama import Fore, Style
+import mysql.connector
 import threading
 import socket
 import bcrypt
 import json
 import ssl
+import sys
 import re
 
 
 class Client:
-    def __init__(self, conn):
+    def __init__(self, conn, cursor):
         self.__conn = conn
+        self.__cursor = cursor
+        self.__auth = False
+        self.__user = ""
 
     def run(self):
-        received_msg = ""
         previous_msg = ""
         client_action = ""
 
@@ -23,20 +28,22 @@ class Client:
                     output = json.loads(received_message)
                     for item in output:
                         client_action = item["client"]
-                        received_message = previous_msg
+                        previous_msg = received_message
                 except KeyError:
                     print("Invalid json format")
-                    received_message = previous_msg
+                    previous_msg = received_message
                     continue
                 except json.decoder.JSONDecodeError:
                     print("Invalid json format")
-                    received_message = previous_msg
+                    previous_msg = received_message
                     continue
 
                 if client_action == "login":
                     self.login(output)
                 elif client_action == "sign_up":
                     self.sign_up(output)
+                elif client_action == "get_tasks":
+                    self.get_tasks(output)
 
         print("A socket has been closed")
 
@@ -63,6 +70,8 @@ class Client:
                     if bcrypt.checkpw(password.encode('utf8'), item["password"].encode('utf8')):
                         print(f"User {username} is logged in !")
                         try:
+                            self.__auth = True
+                            self.__user = username
                             self.__conn.send(self.json_maker("response", "yes").encode('utf-8'))
                         except ssl.SSLEOFError:
                             print('Client aborted connection')
@@ -142,6 +151,18 @@ class Client:
             except ssl.SSLEOFError:
                 print('Client aborted connection')
 
+    def get_tasks(self, output):
+        if self.__auth:
+            # RETOURNER LA LISTE DES TACHES
+            pass
+        else:
+            print("User is not authentificated")
+            try:
+                self.__conn.send(self.json_maker("response", "no", "NotAuthorized").encode('utf-8'))
+            except ssl.SSLEOFError:
+                print('Client aborted connection')
+            return -1
+
     @staticmethod
     def json_maker(server_answer, authorized, error="", content=""):
         if content != "":
@@ -164,6 +185,8 @@ class Client:
 
 
 if __name__ == "__main__":
+    open_sockets = []
+
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     context.load_cert_chain('./certs/srv/YeGrec.pem', './certs/srv/YeGrec.key')
 
@@ -172,8 +195,24 @@ if __name__ == "__main__":
     server.listen(5)
     secure_sock = context.wrap_socket(server, server_side=True)
 
-    open_sockets = []
+    print("Trying to reach mysql server... ", end="")
 
+    try:
+        database = mysql.connector.connect(
+            host="10.128.200.7",
+            port="3306",
+            user="sae52",
+            password="Sae52rt31",
+            database="mydb"
+        )
+        cursor = database.cursor()
+    except mysql.connector.errors.DatabaseError:
+        print(Fore.RED + "Failed")
+        print("Can't reach database server" + Style.RESET_ALL)
+        sys.exit(-1)
+
+    print(Fore.GREEN + "OK" + Style.RESET_ALL)
+    
     while True:
         print("Waiting for connection...")
         try:
@@ -183,7 +222,7 @@ if __name__ == "__main__":
             continue
 
         print(f"Client {ip}:{port} is connected !")
-        client = Client(conn)
+        client = Client(conn, cursor)
         thread = threading.Thread(target=client.run())
         thread.start()
         open_sockets.append(thread)
