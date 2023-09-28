@@ -1,6 +1,11 @@
 import sys
-from PyQt5.QtCore import QDateTime
-from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QApplication, QLabel, QLineEdit, QPushButton, QMessageBox, QFrame, QScrollArea, QVBoxLayout, QFormLayout, QGroupBox, QComboBox, QDateEdit
+import socket
+import json
+import ssl
+from threading import Thread
+import time
+from PyQt5.QtCore import QDate, Qt
+from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QApplication, QLabel, QLineEdit, QPushButton, QMessageBox, QScrollArea, QVBoxLayout, QFormLayout, QGroupBox, QComboBox, QDateEdit
 
 class Login(QMainWindow):
     def __init__(self):
@@ -25,6 +30,8 @@ class Login(QMainWindow):
 
         self.bouton1 = QPushButton(self)
         self.bouton1.setText("Connexion")
+        self.bouton1.clicked.connect(self.conn1)
+
         self.bouton2 = QPushButton(self)
         self.bouton2.setText("Créer un compte")
         self.bouton2.clicked.connect(self.user)
@@ -39,6 +46,52 @@ class Login(QMainWindow):
     def user(self):
         self.window2 = User()
         self.window2.show()
+        window.close()
+
+    def MonThread(self):
+        
+
+class MyThread(Thread):
+    def __init__(self, jusqua):
+        Thread.__init__(self)
+        self.jusqua = jusqua
+        self.etat = False
+
+    def run(self):
+        self.etat = True
+        hostname = '127.0.0.1'
+
+        context = ssl.create_default_context()
+        context.load_verify_locations("./certs/CA.crt")
+
+        with socket.create_connection((hostname, 5000)) as sock:
+            print("test")
+            with context.wrap_socket(sock, server_hostname=hostname) as conn:
+                credentials = json.dumps([
+                    {
+                        "client": "login",
+                        "username": "user",
+                        "password": "psw1",
+                    }
+                ])
+                conn.send(credentials.encode('utf-8'))
+
+                msg = ""
+
+                buffer = conn.recv(1024)
+                rc = buffer.decode('utf-8')
+                if rc != msg:
+                    print(rc)
+                    msg = rc
+
+                conn.send(json.dumps([
+                    {
+                        "client": "disconnect"
+                    }
+                ]).encode('utf-8'))
+
+m = MyThread(10)
+m.start()
 
 class User(QMainWindow):
     def __init__(self):
@@ -180,21 +233,30 @@ class Tache(QMainWindow):
         self.combobox2 = QComboBox()
         self.combobox2.addItems(['faible', 'moyenne', 'haut'])
 
+        self.lbl4 = QLabel(self)
+        self.lbl4.setText("Date")
         self.date = QDateEdit(self, calendarPopup=True)
 
+        #pas supr
+        #self.datetime = QDate.currentDate()
+        #self.lbl4 = QLabel(self)
+        #self.lbl4.setText(self.datetime.toString(Qt.DefaultLocaleLongDate))
+
+        
         grid.addWidget(self.lbl1, 1, 1)
         grid.addWidget(self.combobox, 2, 1)
         grid.addWidget(self.lbl2, 3, 1)
         grid.addWidget(self.champ2, 4, 1)
         grid.addWidget(self.lbl3, 5, 1)
         grid.addWidget(self.combobox2, 6, 1)
-        grid.addWidget(self.date, 7, 1)
+        grid.addWidget(self.date, 8, 1)
+        grid.addWidget(self.lbl4, 7, 1)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
 
-    window = MainWindow()
-    #window = Login()
+    #window = MainWindow()
+    window = Login()
     window.show()
 
     app.exec()
