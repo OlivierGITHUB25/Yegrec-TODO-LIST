@@ -42,8 +42,8 @@ class Client:
                     self.login(output)
                 elif client_action == "sign_up":
                     self.sign_up(output)
-                elif client_action == "get_tasks":
-                    self.get_tasks(output)
+                elif client_action == "create_task":
+                    self.create_task(output)
 
         print("A socket has been closed")
 
@@ -65,7 +65,7 @@ class Client:
 
         try:
             self.__cursor.execute("SELECT * FROM user")
-        except:
+        except mysql.connector.Error:
             print("Internal error : Can't create entry")
             try:
                 self.__conn.send(self.json_maker("response", "yes", error="InternalError").encode('utf-8'))
@@ -115,7 +115,7 @@ class Client:
 
         try:
             self.__cursor.execute("SELECT * FROM user")
-        except:
+        except mysql.connector.Error:
             print("Internal error : Can't create entry")
             try:
                 self.__conn.send(self.json_maker("response", "yes", error="InternalError").encode('utf-8'))
@@ -143,7 +143,7 @@ class Client:
                     try:
                         self.__cursor.execute(sql, (username, password_hash.decode('utf-8')))
                         self.__database.commit()
-                    except:
+                    except mysql.connector.Error:
                         print("Internal error : Can't create entry")
                         try:
                             self.__conn.send(self.json_maker("response", "yes", error="InternalError").encode('utf-8'))
@@ -177,10 +177,62 @@ class Client:
             except ssl.SSLEOFError:
                 print('Client aborted connection')
 
-    def get_tasks(self, output):
+    def create_task(self, output):
+        name = ""
+        state = ""
+        date = ""
+        priority = ""
+        labels = []
+        users = []
+
         if self.__auth:
-            # RETURN_TASK_LIST
-            pass
+            try:
+                content = []
+                for item in output:
+                    content = item["content"]
+
+                name = content.get("name")
+                state = content.get("state")
+                date = content.get("date")
+                description = content.get("description")
+                priority = content.get("priority")
+                labels = content.get("labels")
+                if content.get("users") == {}:
+                    users = self.__user
+                else:
+                    users = content.get("users")
+
+                print(type(labels))
+                print(name, "\n", state, "\n", date, "\n", description, "\n", priority, "\n", labels, "\n", users)
+
+            except KeyError:
+                print("Invalid json format - KeyError")
+                try:
+                    self.__conn.send(self.json_maker("response", "no", "InvalidJSONFormat").encode('utf-8'))
+                except ssl.SSLEOFError:
+                    print('Client aborted connection')
+                return -1
+            except IndexError:
+                print("Invalid json format - IndexError")
+                try:
+                    self.__conn.send(self.json_maker("response", "no", "InvalidJSONFormat").encode('utf-8'))
+                except ssl.SSLEOFError:
+                    print('Client aborted connection')
+                return -1
+
+            sql = "INSERT INTO task (name, state, date, description, priority, labels, users) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+            try:
+                self.__cursor.execute(sql, (name, state, date, description, priority, labels, users))
+                self.__database.commit()
+            except mysql.connector.Error:
+                print("Internal error : Can't create entry")
+                try:
+                    self.__conn.send(self.json_maker("response", "yes", error="InternalError").encode('utf-8'))
+                except ssl.SSLEOFError:
+                    print('Client aborted connection')
+                finally:
+                    return -1
+
         else:
             print("User is not authenticated")
             try:
@@ -225,10 +277,10 @@ if __name__ == "__main__":
 
     try:
         database = mysql.connector.connect(
-            host="127.0.0.1",
+            host="10.129.10.153",
             port="3306",
-            user="root",
-            password="toto",
+            user="sae52",
+            password="Sae52rt31",
             database="yegrec"
         )
         cursor = database.cursor()

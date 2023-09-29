@@ -14,18 +14,27 @@ with socket.create_connection((hostname, 5000)) as sock:
         credentials = json.dumps([
             {
                 "client": "login",
-                "username": "rootoo",
+                "username": "valentin",
                 "password": "totototo"
             }
         ])
         conn.send(credentials.encode('utf-8'))
 
-        # credentials = json.dumps([
-        #     {
-        #         "client": "get_tasks",
-        #     }
-        # ])
-        # conn.send(credentials.encode('utf-8'))
+        credentials = json.dumps([
+            {
+                "client": "create_task",
+                "content": {
+                    "name": "Tâche test",
+                    "state": "todo",
+                    "date": "1000-01-01 00:00:00",
+                    "description": "Descriptino de test",
+                    "priority": "medium",
+                    "labels": {},
+                    "users": {}
+                }
+            }
+        ])
+        conn.send(credentials.encode('utf-8'))
 
         msg = ""
         buffer = conn.recv(1024)
