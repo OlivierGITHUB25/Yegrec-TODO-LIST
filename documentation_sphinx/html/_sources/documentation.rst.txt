@@ -7,17 +7,19 @@ Installation de YeGrec
 
 Windows
 ^^^^^^^
-Bonjour voilà comment on installe ça chacal sur Windows
+Premièrement il faut récupérer le dépôt github :
 
 .. code-block:: git
 
    git clone https://github.com/TheWilli67/YeGrec
 
+Puis il vous faudra extraire le fichier executable dans le dossier Windows et lançer ce fichier executable
+
 Linux
 ^^^^^
-Bonjour voilà comment on installe ça chacal sur linux
+Bonjour voilà comment on installe ça chacal sur linux :
 
-.. code-block:: git
+.. code-block:: bash
 
    git clone https://github.com/TheWilli67/YeGrec
 
