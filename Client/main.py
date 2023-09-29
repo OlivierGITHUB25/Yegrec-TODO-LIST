@@ -2,6 +2,7 @@ import sys
 import socket
 import json
 import ssl
+import threading
 from threading import Thread
 import time
 from PyQt5.QtCore import QDate, Qt
@@ -11,6 +12,7 @@ class Login(QMainWindow):
     def __init__(self):
         self.window = None
         self.window2 = None
+        self.thread = None
         super().__init__()
         widget = QWidget()
         self.setCentralWidget(widget)
@@ -30,7 +32,7 @@ class Login(QMainWindow):
 
         self.bouton1 = QPushButton(self)
         self.bouton1.setText("Connexion")
-        self.bouton1.clicked.connect(self.conn1)
+        self.bouton1.clicked.connect(self.monThread)
 
         self.bouton2 = QPushButton(self)
         self.bouton2.setText("Créer un compte")
@@ -48,15 +50,22 @@ class Login(QMainWindow):
         self.window2.show()
         window.close()
 
-    def MonThread(self):
-        
+    def monThread(self):
+        action = "login"
+        user = self.champ.text()
+        PSW = self.champ2.text()
+        self.thread = MyThreadsend(action, user, PSW)
         
 
-class MyThread(Thread):
-    def __init__(self, jusqua):
-        Thread.__init__(self)
-        self.jusqua = jusqua
+class MyThreadsend:
+    def __init__(self, action, user, PSW):
+        print("yoyo")
         self.etat = False
+        self.action = action
+        self.user = user
+        self.PSW = PSW
+        array = []
+        array.append(threading.Thread(target=self.run()))
 
     def run(self):
         self.etat = True
@@ -66,33 +75,31 @@ class MyThread(Thread):
         context.load_verify_locations("./certs/CA.crt")
 
         with socket.create_connection((hostname, 5000)) as sock:
-            print("test")
             with context.wrap_socket(sock, server_hostname=hostname) as conn:
                 credentials = json.dumps([
                     {
-                        "client": "login",
-                        "username": "user",
-                        "password": "psw1",
+                        "client": self.action,
+                        "username": self.user,
+                        "password": self.PSW,
                     }
                 ])
                 conn.send(credentials.encode('utf-8'))
 
-                msg = ""
+                #msg = ""
 
-                buffer = conn.recv(1024)
-                rc = buffer.decode('utf-8')
-                if rc != msg:
-                    print(rc)
-                    msg = rc
+                #buffer = conn.recv(1024)
+                #rc = buffer.decode('utf-8')
+                #if rc != msg:
+                 #   print(rc)
+                  #  msg = rc
 
-                conn.send(json.dumps([
-                    {
-                        "client": "disconnect"
-                    }
-                ]).encode('utf-8'))
+                #conn.send(json.dumps([
+                #    {
+                 #       "client": "disconnect"
+                 #   }
+                #]).encode('utf-8'))
 
-m = MyThread(10)
-m.start()
+class MyThreadrsv:
 
 class User(QMainWindow):
     def __init__(self):
