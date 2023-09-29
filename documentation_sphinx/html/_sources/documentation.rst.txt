@@ -3,13 +3,13 @@ Documentation
 ============
 
 Installation de YeGrec
---------------------
+----------------------
 
 Windows
 ^^^^^^^
 Premièrement il faut récupérer le dépôt github :
 
-.. code-block:: git
+.. code-block:: bash
 
    git clone https://github.com/TheWilli67/YeGrec
 
