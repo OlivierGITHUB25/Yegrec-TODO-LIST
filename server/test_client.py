@@ -13,7 +13,7 @@ with socket.create_connection((hostname, 5000)) as sock:
         time.sleep(1)
         credentials = json.dumps([
             {
-                "client": "login",
+                "client": "sign_up",
                 "username": "valentin",
                 "password": "totototo"
             }
@@ -27,7 +27,7 @@ with socket.create_connection((hostname, 5000)) as sock:
                     "name": "Tâche test",
                     "state": "todo",
                     "date": "1000-01-01 00:00:00",
-                    "description": "Descriptino de test",
+                    "description": "Description de test",
                     "priority": "medium",
                     "labels": {},
                     "users": {}
@@ -36,16 +36,17 @@ with socket.create_connection((hostname, 5000)) as sock:
         ])
         conn.send(credentials.encode('utf-8'))
 
-        msg = ""
-        buffer = conn.recv(1024)
-        rc = buffer.decode('utf-8')
-        if rc != msg:
-            print(rc)
-            msg = rc
+        while True:
+            msg = ""
+            buffer = conn.recv(1024)
+            rc = buffer.decode('utf-8')
+            if rc != msg:
+                print(rc)
+                msg = rc
 
-        # conn.send(json.dumps([
-        #     {
-        #         "client": "disconnect"
-        #     }
-        # ]).encode('utf-8'))
+        conn.send(json.dumps([
+            {
+                "client": "disconnect"
+            }
+        ]).encode('utf-8'))
 
