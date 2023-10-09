@@ -12,6 +12,7 @@ Welcome to YeGrec's Project documentation!
    
    introduction
    documentation
+   guide_user_dev
 
 
 Indices and tables

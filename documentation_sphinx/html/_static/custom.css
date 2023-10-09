@@ -1,0 +1,7 @@
+div.wy-side-nav-search img {
+    max-width: 10%;  /* Ajustez cette valeur selon vos besoins */
+    height: auto;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
