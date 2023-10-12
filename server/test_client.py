@@ -13,27 +13,39 @@ with socket.create_connection((hostname, 5000)) as sock:
         time.sleep(1)
         credentials = json.dumps([
             {
-                "client": "sign_up",
+                "client": "login",
                 "username": "valentin",
-                "password": "totototo"
+                "password": "azerty68"
             }
         ])
         conn.send(credentials.encode('utf-8'))
 
         credentials = json.dumps([
             {
-                "client": "create_task",
+                "client": "create_subtask",
                 "content": {
-                    "name": "Tâche test",
-                    "state": "todo",
-                    "date": "1000-01-01 00:00:00",
-                    "description": "Description de test",
-                    "priority": "medium",
-                    "labels": {},
-                    "users": {}
+                    "name": "Sous tache",
+                    "state": "2",
+                    "date": "2023-10-20 00:00:00",
+                    "task_id": "1",
+                    "users_id": {},
                 }
             }
         ])
+        # credentials = json.dumps([
+        #     {
+        #         "client": "create_task",
+        #         "content": {
+        #             "name": "Acheter du pain",
+        #             "state": "1",
+        #             "priority": "1",
+        #             "date": "2023-10-20 00:00:00",
+        #             "description": "Description de test",
+        #             "labels_id": {},
+        #             "users_id": {},
+        #         }
+        #     }
+        # ])
         conn.send(credentials.encode('utf-8'))
 
         while True:
@@ -43,10 +55,3 @@ with socket.create_connection((hostname, 5000)) as sock:
             if rc != msg:
                 print(rc)
                 msg = rc
-
-        conn.send(json.dumps([
-            {
-                "client": "disconnect"
-            }
-        ]).encode('utf-8'))
-

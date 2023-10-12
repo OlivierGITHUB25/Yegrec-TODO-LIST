@@ -41,13 +41,16 @@ class Client:
 
                 if client_action == "login":
                     if self.login(output) == -1:
-                        break
+                        client_action = "disconnect"
                 elif client_action == "sign_up":
                     if self.sign_up(output) == -1:
-                        break
-                # elif client_action == "create_task":
-                #     if self.create_task(output) == -1:
-                #         break
+                        client_action = "disconnect"
+                elif client_action == "create_task":
+                    if self.create_task(output) == -1:
+                        client_action = "disconnect"
+                elif client_action == "create_subtask":
+                    if self.create_subtask(output) == -1:
+                        client_action = "disconnect"
 
         self.write_log("The socket has been closed", "CLOSED_SOCKET")
 
@@ -69,7 +72,7 @@ class Client:
             return 0
 
         try:
-            self.__cursor.execute("SELECT * FROM user")
+            self.__cursor.execute("SELECT * FROM User")
         except mysql.connector.Error:
             self.write_log("Internal error", "mysql.connector.Error")
             try:
@@ -123,11 +126,11 @@ class Client:
             return 0
 
         try:
-            self.__cursor.execute("SELECT * FROM user")
+            self.__cursor.execute("SELECT * FROM User")
         except mysql.connector.Error:
             self.write_log("Internal error", "mysql.connector.Error")
             try:
-                self.__conn.send(self.json_maker("response", "yes", error="InternalError").encode('utf-8'))
+                self.__conn.send(self.json_maker("response", "yes", "InternalError").encode('utf-8'))
             except ssl.SSLEOFError:
                 self.write_log("Client aborted connection", "ssl.SSLEOFError")
                 return -1
@@ -149,14 +152,14 @@ class Client:
             if 3 < len(username) < 32:
                 if 7 < len(password) < 32:
                     password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-                    sql = "INSERT INTO user (username, password) VALUES (%s, %s)"
+                    sql = "INSERT INTO User (username, password) VALUES (%s, %s)"
                     try:
                         self.__cursor.execute(sql, (username, password_hash.decode('utf-8')))
                         self.__database.commit()
                     except mysql.connector.Error:
                         self.write_log("Internal error", "mysql.connector.Error")
                         try:
-                            self.__conn.send(self.json_maker("response", "yes", error="InternalError").encode('utf-8'))
+                            self.__conn.send(self.json_maker("response", "yes", "InternalError").encode('utf-8'))
                         except ssl.SSLEOFError:
                             self.write_log("Client aborted connection", "ssl.SSLEOFError")
                             return -1
@@ -191,74 +194,140 @@ class Client:
                 self.write_log("Client aborted connection", "ssl.SSLEOFError")
                 return -1
 
-    # def create_task(self, output):
-    #     name = ""
-    #     state = ""
-    #     date = ""
-    #     priority = ""
-    #     labels = []
-    #     users = []
-    #
-    #     if self.__auth:
-    #         try:
-    #             content = []
-    #             for item in output:
-    #                 content = item["content"]
-    #
-    #             name = content.get("name")
-    #             state = content.get("state")
-    #             date = content.get("date")
-    #             description = content.get("description")
-    #             priority = content.get("priority")
-    #             labels = content.get("labels")
-    #
-    #             if content.get("users") == {}:
-    #                 users = self.__user
-    #             else:
-    #                 users = content.get("users")
-    #
-    #             print(type(labels))
-    #             print(name, "\n", state, "\n", date, "\n", description, "\n", priority, "\n", labels, "\n", users)
-    #
-    #         except KeyError:
-    #             self.write_log("Invalid json format", "KeyError")
-    #             try:
-    #                 self.__conn.send(self.json_maker("response", "no", "InvalidJSONFormat").encode('utf-8'))
-    #             except ssl.SSLEOFError:
-    #                 self.write_log("Client aborted connection", "ssl.SSLEOFError")
-    #                 return -1
-    #             return 0
-    #         except IndexError:
-    #             self.write_log("Invalid json format", "IndexError")
-    #             try:
-    #                 self.__conn.send(self.json_maker("response", "no", "InvalidJSONFormat").encode('utf-8'))
-    #             except ssl.SSLEOFError:
-    #                 self.write_log("Client aborted connection", "ssl.SSLEOFError")
-    #                 return -1
-    #             return 0
-    #
-    #         sql = ("INSERT INTO task (name, state, date, description, priority, labels, users) "
-    #                "VALUES (%s, %s, %s, %s, %s, %s, %s)")
-    #         try:
-    #             self.__cursor.execute(sql, (name, state, date, description, priority, labels, users))
-    #             self.__database.commit()
-    #         except mysql.connector.Error:
-    #             self.write_log("Internal error", "mysql.connector.Error")
-    #             try:
-    #                 self.__conn.send(self.json_maker("response", "yes", error="InternalError").encode('utf-8'))
-    #             except ssl.SSLEOFError:
-    #                 self.write_log("Client aborted connection", "ssl.SSLEOFError")
-    #                 return -1
-    #             return 0
-    #
-    #     else:
-    #         self.write_log("This connection is not authenticated", "NOT_AUTHORIZED")
-    #         try:
-    #             self.__conn.send(self.json_maker("response", "no", "NotAuthorized").encode('utf-8'))
-    #         except ssl.SSLEOFError:
-    #             self.write_log("Client aborted connection", "ssl.SSLEOFError")
-    #             return -1
-    #         return 0
+    def create_task(self, output):          #TODO : labels & users link
+        name = ""
+        state = ""
+        date = ""
+        priority = ""
+        labels = []
+        users = []
+
+        if self.__auth:
+            try:
+                content = []
+                for item in output:
+                    content = item["content"]
+
+                name = content.get("name")
+                state = content.get("state")
+                priority = content.get("priority")
+                date = content.get("date")
+                description = content.get("description")
+
+            except KeyError:
+                self.write_log("Invalid json format", "KeyError")
+                try:
+                    self.__conn.send(self.json_maker("response", "no", "InvalidJSONFormat").encode('utf-8'))
+                except ssl.SSLEOFError:
+                    self.write_log("Client aborted connection", "ssl.SSLEOFError")
+                    return -1
+                return 0
+            except IndexError:
+                self.write_log("Invalid json format", "IndexError")
+                try:
+                    self.__conn.send(self.json_maker("response", "no", "InvalidJSONFormat").encode('utf-8'))
+                except ssl.SSLEOFError:
+                    self.write_log("Client aborted connection", "ssl.SSLEOFError")
+                    return -1
+                return 0
+
+            sql = ("INSERT INTO Task (name, state, priority, date, description)"
+                   "VALUES (%s, %s, %s, %s, %s)")
+
+            try:
+                self.__cursor.execute(sql, (name, state, priority, date, description))
+                self.__database.commit()
+            except mysql.connector.errors.IntegrityError:
+                self.write_log("Task name already exist", "mysql.connector.Error.IntegrityError:")
+                try:
+                    self.__conn.send(self.json_maker("response", "yes", "TaskNameAlreadyExist").encode('utf-8'))
+                except ssl.SSLEOFError:
+                    self.write_log("Client aborted connection", "ssl.SSLEOFError")
+                    return -1
+                return 0
+            except mysql.connector.Error:
+                self.write_log("Internal error", "mysql.connector.Error")
+                try:
+                    self.__conn.send(self.json_maker("response", "yes", "InternalError").encode('utf-8'))
+                except ssl.SSLEOFError:
+                    self.write_log("Client aborted connection", "ssl.SSLEOFError")
+                    return -1
+                return 0
+        else:
+            self.write_log("This connection is not authenticated", "NOT_AUTHORIZED")
+            try:
+                self.__conn.send(self.json_maker("response", "no", "NotAuthorized").encode('utf-8'))
+            except ssl.SSLEOFError:
+                self.write_log("Client aborted connection", "ssl.SSLEOFError")
+                return -1
+            return 0
+
+    def create_subtask(self, output):       #TODO : labels link
+        name = ""
+        state = ""
+        date = ""
+        task_id = ""
+        labels = []
+
+        if self.__auth:
+            try:
+                content = []
+                for item in output:
+                    content = item["content"]
+
+                name = content.get("name")
+                state = content.get("state")
+                date = content.get("date")
+                task_id = content.get("task_id")
+
+            except KeyError:
+                self.write_log("Invalid json format", "KeyError")
+                try:
+                    self.__conn.send(self.json_maker("response", "no", "InvalidJSONFormat").encode('utf-8'))
+                except ssl.SSLEOFError:
+                    self.write_log("Client aborted connection", "ssl.SSLEOFError")
+                    return -1
+                return 0
+            except IndexError:
+                self.write_log("Invalid json format", "IndexError")
+                try:
+                    self.__conn.send(self.json_maker("response", "no", "InvalidJSONFormat").encode('utf-8'))
+                except ssl.SSLEOFError:
+                    self.write_log("Client aborted connection", "ssl.SSLEOFError")
+                    return -1
+                return 0
+
+            sql = ("INSERT INTO Sub_Task (name, state, date, Task_idTask)"
+                   "VALUES (%s, %s, %s, %s)")
+
+            try:
+                self.__cursor.execute(sql, (name, state, date, task_id))
+                self.__database.commit()
+            except mysql.connector.errors.IntegrityError:
+                self.write_log("SubTask name already exist", "mysql.connector.Error.IntegrityError:")
+                try:
+                    self.__conn.send(self.json_maker("response", "yes", "TaskNameAlreadyExist").encode('utf-8'))
+                except ssl.SSLEOFError:
+                    self.write_log("Client aborted connection", "ssl.SSLEOFError")
+                    return -1
+                return 0
+            except mysql.connector.Error:
+                self.write_log("Internal error", "mysql.connector.Error")
+                try:
+                    self.__conn.send(self.json_maker("response", "yes", "InternalError").encode('utf-8'))
+                except ssl.SSLEOFError:
+                    self.write_log("Client aborted connection", "ssl.SSLEOFError")
+                    return -1
+                return 0
+
+        else:
+            self.write_log("This connection is not authenticated", "NOT_AUTHORIZED")
+            try:
+                self.__conn.send(self.json_maker("response", "no", "NotAuthorized").encode('utf-8'))
+            except ssl.SSLEOFError:
+                self.write_log("Client aborted connection", "ssl.SSLEOFError")
+                return -1
+            return 0
 
     def write_log(self, message, event):
         with open("log.txt", "a") as log_file:

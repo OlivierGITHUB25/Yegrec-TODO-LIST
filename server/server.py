@@ -38,9 +38,9 @@ if __name__ == "__main__":
             port="3306",
             user="root",
             password="toto",
-            database="yegrec"
+            database="YeGrec"
         )
-        cursor = database.cursor()
+        cursor = database.cursor(buffered=True)
     except mysql.connector.errors.DatabaseError:
         print(Fore.RED + "Failed")
         print("Can't reach database server" + Style.RESET_ALL)
