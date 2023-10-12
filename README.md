@@ -9,3 +9,9 @@ Logiciel de gestion de tâche effectué dans le cadre d'un projet de groupe ce p
 - Eliott ALTOE
 - Hugo CHEVALLIER
 
+## Objectif du projet
+- Cohésion de groupe
+- Création d'un logiciel de gestion de tâches
+- gestion d'un projet de petite envergure
+- gestion de tâches a l'aide de divers outils
+- gestion d'un planning de tâches
