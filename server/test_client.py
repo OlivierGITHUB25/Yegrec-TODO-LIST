@@ -11,20 +11,31 @@ with socket.create_connection((hostname, 5000)) as sock:
     with context.wrap_socket(sock, server_hostname=hostname) as conn:
         print(f"Connected to {hostname} with TLS !")
         time.sleep(1)
-        credentials = json.dumps([
+        data = json.dumps([
             {
                 "client": "login",
                 "username": "valentin",
                 "password": "azerty68"
             }
         ])
-        conn.send(credentials.encode('utf-8'))
+        conn.send(data.encode('utf-8'))
 
-        credentials = json.dumps([
+        data = json.dumps([
+            {
+                "client": "create_label",
+                "content": {
+                    "name": "Jeune",
+                    "color": "#FFFFFF",
+                }
+            }
+        ])
+        conn.send(data.encode('utf-8'))
+
+        data = json.dumps([
             {
                 "client": "create_subtask",
                 "content": {
-                    "name": "Sous tache",
+                    "name": "Mini tache",
                     "state": "2",
                     "date": "2023-10-20 00:00:00",
                     "task_id": "1",
@@ -32,21 +43,25 @@ with socket.create_connection((hostname, 5000)) as sock:
                 }
             }
         ])
-        # credentials = json.dumps([
-        #     {
-        #         "client": "create_task",
-        #         "content": {
-        #             "name": "Acheter du pain",
-        #             "state": "1",
-        #             "priority": "1",
-        #             "date": "2023-10-20 00:00:00",
-        #             "description": "Description de test",
-        #             "labels_id": {},
-        #             "users_id": {},
-        #         }
-        #     }
-        # ])
-        conn.send(credentials.encode('utf-8'))
+
+        conn.send(data.encode('utf-8'))
+
+        data = json.dumps([
+            {
+                "client": "create_task",
+                "content": {
+                    "name": "Une tache",
+                    "state": "1",
+                    "priority": "1",
+                    "date": "2023-10-20 00:00:00",
+                    "description": "Description de test",
+                    "labels_id": [],
+                    "users_id": [3, 4]
+                }
+            }
+        ])
+
+        conn.send(data.encode('utf-8'))
 
         while True:
             msg = ""
