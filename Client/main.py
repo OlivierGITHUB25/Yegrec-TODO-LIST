@@ -54,8 +54,9 @@ class Login(QMainWindow):
         action_client = "login"
         user = self.champ.text()
         PSW = self.champ2.text()
-        MyThreadsend.action(action_client, user, PSW)
         self.thread = MyThreadsend()
+        self.thread.action(action_client, user, PSW)
+
 
 
         
@@ -67,10 +68,13 @@ class MyThreadsend:
         thread = threading.Thread(target=self.run())
         thread.start()
 
+
     def action(self, action_client, user="", PSW=""):
+        print("test")
         self.action_client = action_client
         self.user = user
         self.PSW = PSW
+
     def run(self):
         self.context.load_verify_locations("./certs/CA.crt")
         with socket.create_connection((self.hostname, 5000)) as sock:
@@ -78,6 +82,7 @@ class MyThreadsend:
                 self.conn = conn
                 while True:
                     if self.action_client == "login":
+                        print("test9")
                         self.login()
                         print("test")
 
