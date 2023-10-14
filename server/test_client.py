@@ -20,47 +20,45 @@ with socket.create_connection((hostname, 5000)) as sock:
         ])
         conn.send(data.encode('utf-8'))
 
-        data = json.dumps([
-            {
-                "client": "create_label",
-                "content": {
-                    "name": "Jeune",
-                    "color": "#FFFFFF",
-                }
-            }
-        ])
-        conn.send(data.encode('utf-8'))
+        # data = json.dumps([
+        #     {
+        #         "client": "create_label",
+        #         "content": {
+        #             "name": "Firewall",
+        #             "color": "#FFFFFF",
+        #         }
+        #     }
+        # ])
+        # conn.send(data.encode('utf-8'))
+
+        # data = json.dumps([
+        #     {
+        #         "client": "create_task",
+        #         "content": {
+        #             "name": "Crée un serveur apache3",
+        #             "state": "1",
+        #             "priority": "1",
+        #             "date": "2023-10-20 00:00:00",
+        #             "description": "Description de test",
+        #             "labels_id": [2],
+        #             "users_id": [1, 2]
+        #         }
+        #     }
+        # ])
+        # conn.send(data.encode('utf-8'))
 
         data = json.dumps([
             {
                 "client": "create_subtask",
                 "content": {
-                    "name": "Mini tache",
+                    "name": "Webserver3",
                     "state": "2",
                     "date": "2023-10-20 00:00:00",
                     "task_id": "1",
-                    "users_id": {},
+                    "labels_id": [2],
                 }
             }
         ])
-
-        conn.send(data.encode('utf-8'))
-
-        data = json.dumps([
-            {
-                "client": "create_task",
-                "content": {
-                    "name": "Une tache",
-                    "state": "1",
-                    "priority": "1",
-                    "date": "2023-10-20 00:00:00",
-                    "description": "Description de test",
-                    "labels_id": [],
-                    "users_id": [3, 4]
-                }
-            }
-        ])
-
         conn.send(data.encode('utf-8'))
 
         while True:

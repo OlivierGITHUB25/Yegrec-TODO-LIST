@@ -197,15 +197,8 @@ class Client:
                 self.write_log("Client aborted connection", "ssl.SSLEOFError")
                 return -1
 
-    def create_task(self, output):          #TODO : labels & users link
+    def create_task(self, output):
         if self.__auth:
-            name = ""
-            state = ""
-            date = ""
-            priority = ""
-            labels = []
-            users = []
-
             try:
                 content = []
                 for item in output:
@@ -216,8 +209,8 @@ class Client:
                 priority = content.get("priority")
                 date = content.get("date")
                 description = content.get("description")
+                labels = content.get("labels_id")
                 users = content.get("users_id")
-
             except KeyError:
                 self.write_log("Invalid json format", "KeyError")
                 try:
@@ -259,16 +252,18 @@ class Client:
                     return -1
                 return 0
 
-            sql = ("INSERT INTO User_has_task (User_idUser, Task_idTask)"
+            sql = ("INSERT INTO User_has_Task (User_idUser, Task_idTask)"
                    "VALUES (%s, %s)")
 
             if len(users) == 0:
                 user = [self.__user]
                 self.__cursor.execute(sql, (user, task_id))
+                self.__database.commit()
             else:
                 try:
                     for user in users:
                         self.__cursor.execute(sql, (user, task_id))
+                    self.__database.commit()
                 except mysql.connector.errors.IntegrityError:
                     try:
                         self.__conn.send(self.json_maker("response", "no", "ValueError").encode('utf-8'))
@@ -284,8 +279,30 @@ class Client:
                         return -1
                     return 0
 
-            self.__database.commit()
+            sql = ("INSERT INTO Task_has_Label (Task_idTask, Label_idLabel)"
+                   "VALUES (%s, %s)")
 
+            if len(labels) == 0:
+                return 0
+            else:
+                try:
+                    for label in labels:
+                        self.__cursor.execute(sql, (task_id, label))
+                    self.__database.commit()
+                except mysql.connector.errors.IntegrityError:
+                    try:
+                        self.__conn.send(self.json_maker("response", "no", "ValueError").encode('utf-8'))
+                    except ssl.SSLEOFError:
+                        self.write_log("Client aborted connection", "ssl.SSLEOFError")
+                        return -1
+                    return 0
+                except mysql.connector.errors.DatabaseError:
+                    try:
+                        self.__conn.send(self.json_maker("response", "no", "InvalidJSONFormat").encode('utf-8'))
+                    except ssl.SSLEOFError:
+                        self.write_log("Client aborted connection", "ssl.SSLEOFError")
+                        return -1
+                    return 0
         else:
             self.write_log("This connection is not authenticated", "NOT_AUTHORIZED")
             try:
@@ -295,14 +312,8 @@ class Client:
                 return -1
             return 0
 
-    def create_subtask(self, output):       #TODO : labels link
+    def create_subtask(self, output):
         if self.__auth:
-            name = ""
-            state = ""
-            date = ""
-            task_id = ""
-            labels = []
-
             try:
                 content = []
                 for item in output:
@@ -312,7 +323,7 @@ class Client:
                 state = content.get("state")
                 date = content.get("date")
                 task_id = content.get("task_id")
-
+                labels = content.get("labels_id")
             except KeyError:
                 self.write_log("Invalid json format", "KeyError")
                 try:
@@ -336,6 +347,7 @@ class Client:
             try:
                 self.__cursor.execute(sql, (name, state, date, task_id))
                 self.__database.commit()
+                subtask_id = self.__cursor.lastrowid
             except mysql.connector.errors.IntegrityError:
                 self.write_log("SubTask name already exist", "mysql.connector.Error.IntegrityError:")
                 try:
@@ -353,6 +365,30 @@ class Client:
                     return -1
                 return 0
 
+            sql = ("INSERT INTO Sub_Task_has_Label (Sub_Task_idSub_Task, Label_idLabel)"
+                   "VALUES (%s, %s)")
+
+            if len(labels) == 0:
+                return 0
+            else:
+                try:
+                    for label in labels:
+                        self.__cursor.execute(sql, (subtask_id, label))
+                    self.__database.commit()
+                except mysql.connector.errors.IntegrityError:
+                    try:
+                        self.__conn.send(self.json_maker("response", "no", "ValueError").encode('utf-8'))
+                    except ssl.SSLEOFError:
+                        self.write_log("Client aborted connection", "ssl.SSLEOFError")
+                        return -1
+                    return 0
+                except mysql.connector.errors.DatabaseError:
+                    try:
+                        self.__conn.send(self.json_maker("response", "no", "InvalidJSONFormat").encode('utf-8'))
+                    except ssl.SSLEOFError:
+                        self.write_log("Client aborted connection", "ssl.SSLEOFError")
+                        return -1
+                    return 0
         else:
             self.write_log("This connection is not authenticated", "NOT_AUTHORIZED")
             try:
@@ -363,9 +399,6 @@ class Client:
             return 0
 
     def create_label(self, output):
-        name = ""
-        color = ""
-
         if self.__auth:
             try:
                 content = []
