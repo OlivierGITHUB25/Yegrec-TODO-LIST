@@ -55,6 +55,13 @@ class Client:
                 elif client_action == "get_tasks":
                     if self.get_tasks() == -1:
                         client_action = "disconnect"
+                else:
+                    self.write_log("Invalid json format", "JSON_ERROR")
+                    try:
+                        self.__conn.send(self.json_maker("response", "yes", "InvalidJSONFormat").encode('utf-8'))
+                    except ssl.SSLEOFError:
+                        self.write_log("Client aborted connection", "ssl.SSLEOFError")
+                        return -1
 
                 client_action = ""
 
@@ -103,16 +110,17 @@ class Client:
                 else:
                     self.write_log(f"{item[1]} enter wrong password", "WRONG_PASSWORD")
                     try:
-                        self.__conn.send(self.json_maker("response", "no").encode('utf-8'))
+                        self.__conn.send(self.json_maker("response", "no", "BadPasswordOrUsername").encode('utf-8'))
                     except ssl.SSLEOFError:
                         self.write_log("Client aborted connection", "ssl.SSLEOFError")
                         return -1
-
+                    return 0
         try:
-            self.__conn.send(self.json_maker("response", "no").encode('utf-8'))
+            self.__conn.send(self.json_maker("response", "no", "BadPasswordOrUsername").encode('utf-8'))
         except ssl.SSLEOFError:
             self.write_log("Client aborted connection", "ssl.SSLEOFError")
             return -1
+        return 0
 
     def sign_up(self, output):
         username = ""
@@ -178,6 +186,7 @@ class Client:
                     except ssl.SSLEOFError:
                         self.write_log("Client aborted connection", "ssl.SSLEOFError")
                         return -1
+                    return 0
                 else:
                     self.write_log(f"Password length is out of range", "PASSWD_ERROR")
                     try:
@@ -185,6 +194,7 @@ class Client:
                     except ssl.SSLEOFError:
                         self.write_log("Client aborted connection", "ssl.SSLEOFError")
                         return -1
+                    return 0
             else:
                 self.write_log(f"Username length is out of range", "USERNAME_ERROR")
                 try:
@@ -192,6 +202,7 @@ class Client:
                 except ssl.SSLEOFError:
                     self.write_log("Client aborted connection", "ssl.SSLEOFError")
                     return -1
+                return 0
         else:
             self.write_log(f"Username use wrong characters", "USERNAME_ERROR")
             try:
@@ -199,6 +210,7 @@ class Client:
             except ssl.SSLEOFError:
                 self.write_log("Client aborted connection", "ssl.SSLEOFError")
                 return -1
+            return 0
 
     def create_task(self, output):
         if self.__auth:
@@ -488,7 +500,7 @@ class Client:
                 json_tasks.append(task)
 
             try:
-                self.__conn.send(self.json_maker("response_with_content", "yes", "", json_tasks).encode('utf-8'))
+                self.__conn.send(self.json_maker("response_with_content", "yes", None, json_tasks).encode('utf-8'))
             except ssl.SSLEOFError:
                 self.write_log("Client aborted connection", "ssl.SSLEOFError")
                 return -1
