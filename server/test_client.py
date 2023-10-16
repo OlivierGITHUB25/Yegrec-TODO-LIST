@@ -22,7 +22,7 @@ with socket.create_connection((hostname, 5000)) as sock:
 
         data = json.dumps([
             {
-                "cliendt": "get_tasks"
+                "client": "get_tasks"
             }
         ])
         conn.send(data.encode('utf-8'))
