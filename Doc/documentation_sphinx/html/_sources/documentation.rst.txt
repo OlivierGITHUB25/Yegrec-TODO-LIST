@@ -10,10 +10,11 @@ Cette section fournit une vue d'ensemble détaillée des fonctionnalités princi
 Fonctionnalités
 ---------------
 
-- **Fonctionnalité 1**: Description de la fonctionnalité 1 et de son utilité.
-- **Fonctionnalité 2**: Description de la fonctionnalité 2 et de son utilité.
+- **Saisie simple**: Ajoutez rapidement des tâches avec des détails, des échéances et des priorités.
+- **Sous-tâches**: Divisez les gros projets en sous-tâches gérables pour une meilleure organisation.
+- **Synchronisation**: Gardez toutes vos tâches à jour sur tous vos appareils.
+- **Confidentialité garantie**: Vos données sont protégées et jamais partagées sans votre consentement.
 - **Fonctionnalité 3**: Description de la fonctionnalité 3 et de son utilité.
-... (et ainsi de suite pour chaque fonctionnalité)
 
 Architecture de l'application
 -----------------------------
