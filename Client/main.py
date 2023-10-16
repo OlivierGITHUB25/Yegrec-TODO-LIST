@@ -18,7 +18,7 @@ class Login(QMainWindow):
         self.setCentralWidget(widget)
         grid = QGridLayout()
         widget.setLayout(grid)
-        self.thread = MyThreadsend()
+        self.thread = MyThreadsend(self)
 
         self.setWindowTitle("YeGrec login")
 
@@ -57,19 +57,29 @@ class Login(QMainWindow):
         PSW = self.champ2.text()
         self.thread.action(action_client, user, PSW)
 
+    def LoginErreur(self):
+        thead = threading.Thread(target=self.__LoginErreur)
+        thead.start()
 
-
-        
+    def __LoginErreur(self):
+        InfoBoxLogin("erreur mots de passe ou identifiant invalide", QMessageBox.Icon.Warning)
+class InfoBoxLogin(QMessageBox):
+    def __init__(self, message: str, type: QMessageBox.Icon):
+        super().__init__()
+        self.setText(message)
+        self.setWindowTitle("Error")
+        self.setIcon(type)
+        self.setStandardButtons(QMessageBox.Ok)
+        self.exec_()
 
 class MyThreadsend:
 
-    def __init__(self):
+    def __init__(self, login_object):
+        self.login_object = login_object
         self.hostname = '127.0.0.1'
         self.context = ssl.create_default_context()
         self.connexion = False
         self.threadtest = False
-
-
 
 
     def action(self, action_client, user="", PSW=""):
@@ -79,7 +89,9 @@ class MyThreadsend:
         if not self.threadtest:
             thread = threading.Thread(target=self.run)
             thread.start()
-            self.threadtest = False
+            self.threadtest = True
+        else:
+            self.run()
 
     def run(self):
         self.context.load_verify_locations("./certs/CA.crt")
@@ -89,13 +101,13 @@ class MyThreadsend:
             self.connexion = True
 
         while True:
-            time.sleep(5)
+            #time.sleep(1)
             if self.action_client == "login":
                 print("test9")
-                self.login()
+                self.logintest()
 
 
-    def login(self):
+    def logintest(self):
             print("test")
             credentials = json.dumps([
                 {
@@ -106,28 +118,22 @@ class MyThreadsend:
             ])
             print("test8")
             self.conn.send(credentials.encode('utf-8'))
-            rc = ""
-            if rc == "":
-                buffer = self.conn.recv(1024)
-                rc = buffer.decode('utf-8')
-            print(rc)
+            print("test9")
+            buffer = self.conn.recv(1024)
+            print("test10")
+            rc = buffer.decode('utf-8')
+            rc =json.loads(rc)
+            for item in rc:
+                print("ssqqs")
+                autho = item["authorized"]
+            if autho == "yes":
+                print("yes")
+            else:
+                print("no")
+                self.login_object.LoginErreur()
 
 
-#class MyThreadrsv:
 
-    # msg = ""
-
-    # buffer = conn.recv(1024)
-    # rc = buffer.decode('utf-8')
-    # if rc != msg:
-    #   print(rc)
-    #  msg = rc
-
-    # conn.send(json.dumps([
-    #    {
-    #       "client": "disconnect"
-    #   }
-    # ]).encode('utf-8'))
 
 
 class User(QMainWindow):
@@ -292,8 +298,8 @@ class Tache(QMainWindow):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
 
-    window = MainWindow()
-    #window = Login()
+    #window = MainWindow()
+    window = Login()
     window.show()
 
     app.exec()
