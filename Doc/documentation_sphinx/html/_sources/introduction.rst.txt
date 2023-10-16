@@ -5,16 +5,19 @@ Introduction à l'application
 Présentation de l'application
 -----------------------------
 
-Votre application est une solution innovante qui permet [description brève de ce que fait votre application]. Elle a été conçue pour [public cible, par exemple: les développeurs, les entreprises, le grand public, etc.].
+YeGrec est une application intuitive et efficace de gestion de tâches conçue pour aider 
+les professionnels et les particuliers à organiser leur quotidien. Que vous soyez en train de gérer un projet complexe, 
+de suivre vos tâches quotidiennes ou de planifier vos objectifs à long terme, YeGrec est là pour vous aider à rester 
+sur la bonne voie.
 
 Prérequis
 ---------
 
 Avant de commencer l'installation de l'application, assurez-vous de répondre aux prérequis suivants:
 
-- Système d'exploitation: [par exemple: Windows 10, macOS 10.15+, Linux]
-- Version de Python: [par exemple: Python 3.7+]
-- [Autres prérequis si nécessaire]
+- Système d'exploitation: [Windows 10/11, macOS 10.15+, Linux 6.5+]
+- Version de Python: [par exemple: Python 3.11+]
+- Espace de stockage : [+ ou - 5Go]
 
 Installation
 ------------
@@ -31,13 +34,13 @@ Installation
 
 .. code-block:: bash
 
-   git clone [URL du dépôt]
+   git clone https://github.com/TheWilli67/YeGrec.git
 
 2. Accédez au répertoire de l'application:
 
 .. code-block:: bash
 
-   cd [nom du répertoire]
+   cd YeGrec
 
 3. Installez l'application:
 

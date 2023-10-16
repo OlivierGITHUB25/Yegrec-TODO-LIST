@@ -18,8 +18,8 @@
 # -- Project information -----------------------------------------------------
 
 project = 'YeGrec'
-copyright = '2023, William, Morgan, Valentin'
-author = 'William, Morgan, Valentin'
+copyright = '2023, TheWilli67, Morgan, Valentin,'
+author = 'TheWilli67, Morgan, Valentin'
 
 # The full version, including alpha/beta/rc tags
 release = '28/09/2023'
@@ -64,5 +64,5 @@ html_logo = '_static/Logo_YeGrec.png'
 html_static_path = ['_static']
 
 html_css_files = [
-    '_static/custom.css',
+    'css/custom.css',
 ]
