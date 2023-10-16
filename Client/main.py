@@ -18,6 +18,7 @@ class Login(QMainWindow):
         self.setCentralWidget(widget)
         grid = QGridLayout()
         widget.setLayout(grid)
+        self.thread = MyThreadsend()
 
         self.setWindowTitle("YeGrec login")
 
@@ -54,7 +55,6 @@ class Login(QMainWindow):
         action_client = "login"
         user = self.champ.text()
         PSW = self.champ2.text()
-        self.thread = MyThreadsend()
         self.thread.action(action_client, user, PSW)
 
 
@@ -62,40 +62,52 @@ class Login(QMainWindow):
         
 
 class MyThreadsend:
+
     def __init__(self):
         self.hostname = '127.0.0.1'
         self.context = ssl.create_default_context()
-        thread = threading.Thread(target=self.run())
-        thread.start()
+        self.connexion = False
+
+
 
 
     def action(self, action_client, user="", PSW=""):
-        print("test")
         self.action_client = action_client
         self.user = user
         self.PSW = PSW
+        thread = threading.Thread(target=self.run)
+        thread.start()
+        print("hhh")
 
     def run(self):
         self.context.load_verify_locations("./certs/CA.crt")
-        with socket.create_connection((self.hostname, 5000)) as sock:
-            with self.context.wrap_socket(sock, server_hostname=self.hostname) as conn:
-                self.conn = conn
-                while True:
-                    if self.action_client == "login":
-                        print("test9")
-                        self.login()
-                        print("test")
+        if not self.connexion:
+            sock = socket.create_connection((self.hostname, 5000))
+            self.conn = self.context.wrap_socket(sock, server_hostname=self.hostname)
+            self.connexion = True
+        while True:
+            time.sleep(5)
+            if self.action_client == "login":
+                print("test9")
+                self.login()
+
 
     def login(self):
+            print("test")
             credentials = json.dumps([
                 {
-                    "client": self.action,
+                    "client": self.action_client,
                     "username": self.user,
                     "password": self.PSW,
                 }
             ])
+            print("test8")
             self.conn.send(credentials.encode('utf-8'))
-            print("yes")
+            rc = ""
+            if rc == "":
+                buffer = self.conn.recv(1024)
+                rc = buffer.decode('utf-8')
+            print(rc)
 
 
 #class MyThreadrsv:
