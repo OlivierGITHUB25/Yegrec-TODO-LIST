@@ -15,9 +15,9 @@ Prérequis
 
 Avant de commencer l'installation de l'application, assurez-vous de répondre aux prérequis suivants:
 
-- Système d'exploitation: [par exemple: Windows 10, macOS 10.15+, Linux]
-- Version de Python: [par exemple: Python 3.7+]
-- [Autres prérequis si nécessaire]
+- Système d'exploitation: [Windows 10/11, macOS 10.15+, Linux 6.5+]
+- Version de Python: [par exemple: Python 3.11+]
+- Espace de stockage : [+ ou - 5Go]
 
 Installation
 ------------
@@ -34,13 +34,13 @@ Installation
 
 .. code-block:: bash
 
-   git clone [URL du dépôt]
+   git clone https://github.com/TheWilli67/YeGrec.git
 
 2. Accédez au répertoire de l'application:
 
 .. code-block:: bash
 
-   cd [nom du répertoire]
+   cd YeGrec
 
 3. Installez l'application:
 
