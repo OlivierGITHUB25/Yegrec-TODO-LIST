@@ -32,10 +32,8 @@ class Client:
                         client_action = item["client"]
                 except KeyError:
                     self.write_log("Invalid json format", "KeyError")
-                    continue
                 except json.decoder.JSONDecodeError:
                     self.write_log("Invalid json format", "UNKNOWN_ERROR")
-                    continue
                 finally:
                     previous_msg = received_message
 
@@ -54,6 +52,11 @@ class Client:
                 elif client_action == "create_label":
                     if self.create_label(output) == -1:
                         client_action = "disconnect"
+                elif client_action == "get_tasks":
+                    if self.get_tasks() == -1:
+                        client_action = "disconnect"
+
+                client_action = ""
 
         self.write_log("The socket has been closed", "CLOSED_SOCKET")
 
@@ -456,14 +459,58 @@ class Client:
                 return -1
             return 0
 
+    def get_tasks(self):
+        if self.__auth:
+            tasks = []
+            sql = ("SELECT Task.* "
+                   "FROM Task "
+                   "INNER JOIN User_has_Task ON Task.idTask = User_has_Task.Task_idTask "
+                   "INNER JOIN User ON User_has_Task.User_idUser = User.idUser "
+                   "WHERE User.username = %s")
+
+            try:
+                self.__cursor.execute(sql, (self.__user,))
+                for x in self.__cursor:
+                    tasks.append(x)
+            except mysql.connector.Error:
+                self.write_log("Internal error", "mysql.connector.Error")
+                try:
+                    self.__conn.send(self.json_maker("response", "yes", "InternalError").encode('utf-8'))
+                except ssl.SSLEOFError:
+                    self.write_log("Client aborted connection", "ssl.SSLEOFError")
+                    return -1
+                return 0
+
+            json_tasks = []
+            for i in tasks:
+                date_to_str = i[4].strftime('%Y-%m-%d %H:%M:%S')
+                task = {"id": i[0], "name": i[1], "state": i[2], "priority": i[3], "date": date_to_str, "description": i[5]}
+                json_tasks.append(task)
+
+            try:
+                self.__conn.send(self.json_maker("response_with_content", "yes", "", json_tasks).encode('utf-8'))
+            except ssl.SSLEOFError:
+                self.write_log("Client aborted connection", "ssl.SSLEOFError")
+                return -1
+            return 0
+
+        else:
+            self.write_log("This connection is not authenticated", "NOT_AUTHORIZED")
+            try:
+                self.__conn.send(self.json_maker("response", "no", "NotAuthorized").encode('utf-8'))
+            except ssl.SSLEOFError:
+                self.write_log("Client aborted connection", "ssl.SSLEOFError")
+                return -1
+            return 0
+
     def write_log(self, message, event):
         with open("log.txt", "a") as log_file:
             date = datetime.datetime.now()
             log_file.write(date.strftime(f"%Y:%m:%d %H:%M:%S <{self.__address}> {event} : {message}\n"))
 
     @staticmethod
-    def json_maker(server_answer, authorized, error="", content=""):
-        if content != "":
+    def json_maker(server_answer, authorized, error=None, content=None):
+        if content is not None:
             return json.dumps([
                 {
                     "server": server_answer,

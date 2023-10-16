@@ -20,6 +20,13 @@ with socket.create_connection((hostname, 5000)) as sock:
         ])
         conn.send(data.encode('utf-8'))
 
+        data = json.dumps([
+            {
+                "client": "get_tasks"
+            }
+        ])
+        conn.send(data.encode('utf-8'))
+
         # data = json.dumps([
         #     {
         #         "client": "create_label",
@@ -35,31 +42,31 @@ with socket.create_connection((hostname, 5000)) as sock:
         #     {
         #         "client": "create_task",
         #         "content": {
-        #             "name": "Crée un serveur apache3",
+        #             "name": "pfSense",
         #             "state": "1",
         #             "priority": "1",
         #             "date": "2023-10-20 00:00:00",
         #             "description": "Description de test",
-        #             "labels_id": [2],
+        #             "labels_id": [1],
         #             "users_id": [1, 2]
         #         }
         #     }
         # ])
         # conn.send(data.encode('utf-8'))
 
-        data = json.dumps([
-            {
-                "client": "create_subtask",
-                "content": {
-                    "name": "Webserver3",
-                    "state": "2",
-                    "date": "2023-10-20 00:00:00",
-                    "task_id": "1",
-                    "labels_id": [2],
-                }
-            }
-        ])
-        conn.send(data.encode('utf-8'))
+        # data = json.dumps([
+        #     {
+        #         "client": "create_subtask",
+        #         "content": {
+        #             "name": "firewall",
+        #             "state": "2",
+        #             "date": "2023-10-20 00:00:00",
+        #             "task_id": "1",
+        #             "labels_id": [1],
+        #         }
+        #     }
+        # ])
+        # conn.send(data.encode('utf-8'))
 
         while True:
             msg = ""
