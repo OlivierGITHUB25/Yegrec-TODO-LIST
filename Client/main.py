@@ -67,6 +67,7 @@ class MyThreadsend:
         self.hostname = '127.0.0.1'
         self.context = ssl.create_default_context()
         self.connexion = False
+        self.threadtest = False
 
 
 
@@ -75,9 +76,10 @@ class MyThreadsend:
         self.action_client = action_client
         self.user = user
         self.PSW = PSW
-        thread = threading.Thread(target=self.run)
-        thread.start()
-        print("hhh")
+        if not self.threadtest:
+            thread = threading.Thread(target=self.run)
+            thread.start()
+            self.threadtest = False
 
     def run(self):
         self.context.load_verify_locations("./certs/CA.crt")
@@ -85,6 +87,7 @@ class MyThreadsend:
             sock = socket.create_connection((self.hostname, 5000))
             self.conn = self.context.wrap_socket(sock, server_hostname=self.hostname)
             self.connexion = True
+
         while True:
             time.sleep(5)
             if self.action_client == "login":
@@ -289,8 +292,8 @@ class Tache(QMainWindow):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
 
-    #window = MainWindow()
-    window = Login()
+    window = MainWindow()
+    #window = Login()
     window.show()
 
     app.exec()
