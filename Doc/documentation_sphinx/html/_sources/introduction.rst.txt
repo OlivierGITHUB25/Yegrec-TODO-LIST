@@ -5,7 +5,10 @@ Introduction à l'application
 Présentation de l'application
 -----------------------------
 
-Votre application est une solution innovante qui permet [description brève de ce que fait votre application]. Elle a été conçue pour [public cible, par exemple: les développeurs, les entreprises, le grand public, etc.].
+YeGrec est une application intuitive et efficace de gestion de tâches conçue pour aider 
+les professionnels et les particuliers à organiser leur quotidien. Que vous soyez en train de gérer un projet complexe, 
+de suivre vos tâches quotidiennes ou de planifier vos objectifs à long terme, YeGrec est là pour vous aider à rester 
+sur la bonne voie.
 
 Prérequis
 ---------
