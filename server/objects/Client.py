@@ -63,8 +63,6 @@ class Client:
                         self.write_log("Client aborted connection", "ssl.SSLEOFError")
                         return -1
 
-                client_action = ""
-
         self.write_log("The socket has been closed", "CLOSED_SOCKET")
 
     def login(self, output):
@@ -471,7 +469,7 @@ class Client:
                 return -1
             return 0
 
-    def get_tasks(self):
+    def get_tasks(self):        #TODO: Return labels and users for tasks
         if self.__auth:
             tasks = []
             sql = ("SELECT Task.* "
