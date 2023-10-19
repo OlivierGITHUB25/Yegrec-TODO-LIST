@@ -5,26 +5,35 @@ import ssl
 import threading
 from threading import Thread
 import time
-from PyQt5.QtCore import QDate, Qt
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QApplication, QLabel, QLineEdit, QPushButton, QMessageBox, QScrollArea, QVBoxLayout, QFormLayout, QGroupBox, QComboBox, QDateEdit
 
-class Login(QMainWindow):
+def CssLoader(filename):
+    with open(filename,'r') as rd:
+        content = rd.read()
+        rd.close()
+    return content
+class Login(QWidget):
     def __init__(self):
         self.window = None
         self.window2 = None
         self.thread = None
         super().__init__()
-        widget = QWidget()
-        self.setCentralWidget(widget)
+        #self.setCentralWidget(self)
+        self.setObjectName('MainWindow')
         grid = QGridLayout()
-        widget.setLayout(grid)
+        self.setLayout(grid)
         self.thread = MyThreadsend(self)
+        self.setStyleSheet(CssLoader('style.css'))
 
         self.setWindowTitle("YeGrec login")
+        self.setWindowIcon(QIcon('logo.png'))
 
         self.lbl = QLabel(self)
         self.lbl.setText("Identifiant:")
+        self.lbl.setObjectName('id')
         self.champ = QLineEdit(self)
+        self.champ.setObjectName('champ')
 
         self.lbl2 = QLabel(self)
         self.lbl2.setText("Mots de Passe:")
@@ -41,10 +50,10 @@ class Login(QMainWindow):
 
         grid.addWidget(self.lbl, 1, 1)
         grid.addWidget(self.lbl2, 3, 1)
-        grid.addWidget(self.champ, 2, 1, 1, 2)
-        grid.addWidget(self.champ2, 4, 1, 1, 2)
-        grid.addWidget(self.bouton1, 5, 1)
-        grid.addWidget(self.bouton2, 5, 2)
+        grid.addWidget(self.champ, 2, 1, 1, 4)
+        grid.addWidget(self.champ2, 4, 1, 1, 4)
+        grid.addWidget(self.bouton1, 5, 1, 1, 2)
+        grid.addWidget(self.bouton2, 5, 3, 1, 2)
 
     def user(self):
         self.window2 = User()
