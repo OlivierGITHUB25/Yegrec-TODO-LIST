@@ -1,6 +1,7 @@
 import mysql.connector
 import datetime
 import bcrypt
+import time
 import json
 import ssl
 import re
@@ -21,10 +22,9 @@ class Client:
 
         self.write_log("Connection initialized", "NEW_SOCKET")
 
-        while client_action != "disconnect":
+        while client_action != "DISCONNECT":
             buffer = self.__conn.recv(1024)
             received_message = buffer.decode('utf-8')
-
             if received_message != previous_msg:
                 try:
                     output = json.loads(received_message)
@@ -55,16 +55,8 @@ class Client:
                 elif client_action == "get_tasks":
                     if self.get_tasks() == -1:
                         client_action = "disconnect"
-                else:
-                    self.write_log("Invalid json format", "JSON_ERROR")
-                    try:
-                        self.__conn.send(self.json_maker("response", "yes", "InvalidJSONFormat").encode('utf-8'))
-                    except ssl.SSLEOFError:
-                        self.write_log("Client aborted connection", "ssl.SSLEOFError")
-                        return -1
 
-                client_action = ""
-
+        self.__conn.send("DISCONNECT".encode('utf-8'))
         self.write_log("The socket has been closed", "CLOSED_SOCKET")
 
     def login(self, output):
@@ -471,7 +463,7 @@ class Client:
                 return -1
             return 0
 
-    def get_tasks(self):
+    def get_tasks(self):        #TODO: Return labels and users for tasks
         if self.__auth:
             tasks = []
             sql = ("SELECT Task.* "
