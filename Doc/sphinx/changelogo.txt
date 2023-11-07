@@ -1,4 +1,0 @@
-chercher cette ligne :
-wy-side-nav-search .wy-dropdown>a img.logo,.wy-side-nav-search>a img.logo{display:block;margin:0 auto;height:auto;width:75%
-
-modifier la widith a + ou - 75% !
