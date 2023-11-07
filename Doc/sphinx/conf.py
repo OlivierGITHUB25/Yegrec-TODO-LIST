@@ -63,6 +63,9 @@ html_logo = '_static/Logo_YeGrec.png'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
+html_favicon = '_static/YeGrec_Logo_favicon.png'
+#add favicon to the sphinx doc
+
 html_css_files = [
     'css/custom.css',
 ]
