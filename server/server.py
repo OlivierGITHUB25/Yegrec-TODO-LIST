@@ -1,4 +1,4 @@
-from objects.Client import Client
+from objects.C_Client import Client
 from colorama import Fore, Style
 import mysql.connector
 import threading
