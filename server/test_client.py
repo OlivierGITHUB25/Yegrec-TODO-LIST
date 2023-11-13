@@ -25,12 +25,12 @@ with socket.create_connection((hostname, 5000)) as sock:
         # ])
         # conn.send(data.encode('utf-8'))
 
-        data = json.dumps({
-                "client": "create_label",
-                "name": "Firewall",
-                "color": "#FFFFFF",
-        })
-        conn.send(data.encode('utf-8'))
+        # data = json.dumps({
+        #         "client": "create_label",
+        #         "name": "Firewall",
+        #         "color": "#FFFFFF",
+        # })
+        # conn.send(data.encode('utf-8'))
 
         # data = json.dumps({
         #     "client": "create_task",
