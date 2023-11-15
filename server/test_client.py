@@ -18,44 +18,44 @@ with socket.create_connection((hostname, 5000)) as sock:
         })
         conn.send(data.encode('utf-8'))
 
-        # data = json.dumps([
-        #     {
+        # data = json.dumps({
         #         "client": "get_tasks"
-        #     }
-        # ])
+        # })
         # conn.send(data.encode('utf-8'))
+
+        data = json.dumps({
+                "client": "get_subtasks",
+                "task_id": 46
+        })
+        conn.send(data.encode('utf-8'))
 
         # data = json.dumps({
         #         "client": "create_label",
-        #         "name": "Firewall",
+        #         "name": "Security",
         #         "color": "#FFFFFF",
         # })
         # conn.send(data.encode('utf-8'))
 
         # data = json.dumps({
         #     "client": "create_task",
-        #     "name": "PfSense7",
-        #     "state": "1",
-        #     "priority": "2",
+        #     "name": "Switching",
+        #     "state": 1,
+        #     "priority": 2,
         #     "date": "2023-10-20 00:00:00",
         #     "description": "Description de test",
-        #     "labels_id": [],
-        #     "users_id": []
+        #     "labels_id": [7],
+        #     "users_id": [4, 5]
         # })
         # conn.send(data.encode('utf-8'))
 
-        # data = json.dumps([
-        #     {
+        # data = json.dumps({
         #         "client": "create_subtask",
-        #         "content": {
-        #             "name": "firewall",
-        #             "state": "2",
-        #             "date": "2023-10-20 00:00:00",
-        #             "task_id": "1",
-        #             "labels_id": [1],
-        #         }
-        #     }
-        # ])
+        #         "name": "port sfp autre",
+        #         "state": 2,
+        #         "date": "2023-10-20 00:00:00",
+        #         "task_id": 45,
+        #         "labels_id": [6, 8],
+        # })
         # conn.send(data.encode('utf-8'))
 
         while True:

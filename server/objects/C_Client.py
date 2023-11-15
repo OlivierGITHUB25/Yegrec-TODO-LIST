@@ -38,8 +38,8 @@ class Client:
                     self.send_error("InvalidJSONFormat", "Invalid json format")
                 except TypeError:
                     self.send_error("InvalidJSONFormat", "Invalid json format")
-                # except json.decoder.JSONDecodeError:
-                #     self.write_log("Invalid json format", "UNKNOWN_ERROR")
+                except json.decoder.JSONDecodeError:
+                    return self.write_log("Invalid json format", "UNKNOWN_ERROR")
                 finally:
                     previous_msg = received_message
 
@@ -61,6 +61,9 @@ class Client:
                 elif client_action == "get_tasks":
                     if self.get_tasks() == -1:
                         client_action = "disconnect"
+                elif client_action == "get_subtasks":
+                    if self.get_subtasks(output) == -1:
+                        client_action = "disconnect"
                 else:
                     self.send_error("InvalidJSONFormat", "WRONG_ACTION")
 
@@ -68,8 +71,11 @@ class Client:
         self.write_log("The socket has been closed", "CLOSED_SOCKET")
 
     def login(self, output):
-        username = output.get("username", "")
-        password = output.get("password", "")
+        try:
+            username = output.get("username", "")
+            password = output.get("password", "")
+        except AttributeError as error:
+            return self.send_error("InvalidJSONFormat", error)
 
         try:
             self.__cursor.execute("SELECT * FROM User")
@@ -89,11 +95,12 @@ class Client:
         return self.send_error("BadPasswordOrUsername", "WRONG_USERNAME")
 
     def sign_up(self, output):
-        username = output.get("username", "")
-        password = output.get("password", "")
-
         try:
+            username = output.get("username", "")
+            password = output.get("password", "")
             self.__cursor.execute("SELECT * FROM User")
+        except AttributeError as error:
+            return self.send_error("InvalidJSONFormat", error)
         except mysql.connector.Error as error:
             return self.send_error("InternalError", error)
 
@@ -123,16 +130,17 @@ class Client:
 
     def create_task(self, output):
         if self.__auth:
-            name = output.get("name", "")
-            state = output.get("state", "")
-            priority = output.get("priority", "")
-            date = output.get("date", "")
-            description = output.get("description", "")
-            labels_id = output.get("labels_id", [])
-            users_id = output.get("users_id", [])
-
             try:
+                name = output.get("name", "")
+                state = output.get("state", "")
+                priority = output.get("priority", "")
+                date = output.get("date", "")
+                description = output.get("description", "")
+                labels_id = output.get("labels_id", [])
+                users_id = output.get("users_id", [])
                 task = Task(name, state, priority, date, description, labels_id=labels_id, users_id=users_id)
+            except AttributeError as error:
+                return self.send_error("InvalidJSONFormat", error)
             except TypeError:
                 return self.send_error("InvalidJSONFormat", "Invalid json format")
             except ValueError:
@@ -201,14 +209,15 @@ class Client:
 
     def create_subtask(self, output):
         if self.__auth:
-            name = output.get("name", "")
-            state = output.get("state", "")
-            date = output.get("date", "")
-            task_id = output.get("task_id", "")
-            labels_id = output.get("labels_id", [])
-
             try:
+                name = output.get("name", "")
+                state = output.get("state", "")
+                date = output.get("date", "")
+                task_id = output.get("task_id", "")
+                labels_id = output.get("labels_id", [])
                 sub_task = SubTask(name, state, date, task_id, labels_id)
+            except AttributeError as error:
+                return self.send_error("InvalidJSONFormat", error)
             except TypeError as error:
                 return self.send_error("InvalidJSONFormat", error)
             except ValueError as error:
@@ -254,11 +263,12 @@ class Client:
 
     def create_label(self, output):
         if self.__auth:
-            name = output.get("name", "")
-            color = output.get("color", "")
-
             try:
+                name = output.get("name", "")
+                color = output.get("color", "")
                 label = Label(name, color)
+            except AttributeError as error:
+                return self.send_error("InvalidJSONFormat", error)
             except TypeError as error:
                 return self.send_error("InvalidJSONFormat", error)
             except ValueError as error:
@@ -280,9 +290,8 @@ class Client:
         else:
             return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
 
-    def get_tasks(self):        #TODO: Return labels and users for tasks
+    def get_tasks(self):
         if self.__auth:
-            tasks = []
             sql = ("SELECT Task.* "
                    "FROM Task "
                    "INNER JOIN User_has_Task ON Task.idTask = User_has_Task.Task_idTask "
@@ -291,18 +300,76 @@ class Client:
 
             try:
                 self.__cursor.execute(sql, (self.__user,))
-                for x in self.__cursor:
-                    tasks.append(x)
             except mysql.connector.Error as error:
-                self.send_error("InternalError", error)
+                return self.send_error("InternalError", error)
 
-            json_tasks = []
-            for i in tasks:
-                date_to_str = i[4].strftime('%Y-%m-%d %H:%M:%S')
-                task = {"id": i[0], "name": i[1], "state": i[2], "priority": i[3], "date": date_to_str, "description": i[5]}
-                json_tasks.append(task)
+            to_json_task = list()
 
-            return self.send_success(json_tasks)
+            for element in self.__cursor.fetchall():
+                sql_labels = ("SELECT Label.idlabel "
+                              "FROM Label "
+                              "INNER JOIN Task_has_Label ON Label.idlabel = Task_has_Label.Label_idLabel "
+                              "INNER JOIN Task ON Task_has_Label.Task_idTask = Task.idTask "
+                              "WHERE Task.idTask = %s")
+
+                sql_users = ("SELECT User.idUser "
+                             "FROM User "
+                             "INNER JOIN User_has_Task ON User.idUser = User_has_Task.User_idUser "
+                             "INNER JOIN Task ON User_has_Task.Task_idTask = Task.idTask "
+                             "WHERE Task.idTask = %s")
+
+                try:
+                    self.__cursor.execute(sql_labels, (element[0],))
+                    labels_id = [result[0] for result in self.__cursor.fetchall()]
+                    self.__cursor.execute(sql_users, (element[0],))
+                    users_id = [result[0] for result in self.__cursor.fetchall()]
+                except mysql.connector.Error as error:
+                    return self.send_error("InternalError", error)
+
+                date_to_str = element[4].strftime('%Y-%m-%d %H:%M:%S')
+                task = {"task_id": element[0], "name": element[1], "state": element[2], "priority": element[3], "date": date_to_str, "description": element[5], "labels_id": labels_id, "users_id": users_id}
+                to_json_task.append(task)
+
+            return self.send_success(to_json_task)
+
+        else:
+            return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
+
+    def get_subtasks(self, output):
+        if self.__auth:
+            sql = ("SELECT Sub_Task.* "
+                   "FROM Sub_Task "
+                   "WHERE Task_idTask = %s")
+
+            try:
+                task_id = output.get("task_id", "")
+                int(task_id)
+                self.__cursor.execute(sql, (task_id,))
+            except AttributeError as error:
+                return self.send_error("InvalidJSONFormat", error)
+            except mysql.connector.Error as error:
+                return self.send_error("InternalError", error)
+
+            to_json_task = list()
+
+            for element in self.__cursor.fetchall():
+                sql = ("SELECT Label.idlabel "
+                       "FROM Label "
+                       "INNER JOIN Sub_Task_has_Label ON Label.idlabel = Sub_Task_has_Label.Label_idLabel "
+                       "INNER JOIN Sub_Task ON Sub_Task_has_Label.Sub_Task_idSub_Task = Sub_Task.idSub_Task "
+                       "WHERE Sub_Task.idSub_Task = %s")
+
+                try:
+                    self.__cursor.execute(sql, (element[0],))
+                    labels_id = [result[0] for result in self.__cursor.fetchall()]
+                except mysql.connector.Error as error:
+                    return self.send_error("InternalError", error)
+
+                date_to_str = element[3].strftime('%Y-%m-%d %H:%M:%S')
+                task = {"subtask_id": element[0], "name": element[1], "state": element[2], "date": date_to_str, "description": element[4], "labels_id": labels_id}
+                to_json_task.append(task)
+
+            return self.send_success(to_json_task)
 
         else:
             return self.send_error("NotAuthorized", "NOT_AUTHORIZED")

@@ -23,15 +23,10 @@ class SubTask:
         elif len(self.__name) <= 0 or len(self.__name) > 45:
             raise ValueError("ValueError")
 
-        if not isinstance(self.__state, str):  # state verifications
+        if not isinstance(self.__state, int):  # state verifications
             raise TypeError("InvalidJSONFormat")
-        else:
-            try:
-                self.__state = int(self.__state)
-            except ValueError:
-                raise ValueError("ValueError")
-            if self.__state <= 0 or self.__state > 3:
-                raise ValueError("ValueError")
+        elif self.__state <= 0 or self.__state > 3:
+            raise ValueError("ValueError")
 
         if not isinstance(self.__date, str):  # date verifications
             raise TypeError("InvalidJSONFormat")
@@ -41,13 +36,8 @@ class SubTask:
             except ValueError:
                 raise ValueError("ValueError")
 
-        if not isinstance(self.__task_id, str):  # task_id verifications
+        if not isinstance(self.__task_id, int):  # task_id verifications
             raise TypeError("InvalidJSONFormat")
-        else:
-            try:
-                self.__task_id = int(self.__task_id)
-            except ValueError:
-                raise ValueError("ValueError")
 
         if not isinstance(self.__labels, list):  # labels verifications
             raise TypeError("InvalidJSONFormat")

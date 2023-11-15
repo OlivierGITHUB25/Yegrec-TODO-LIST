@@ -27,25 +27,15 @@ class Task:
         elif len(self.__name) <= 0 or len(self.__name) > 45:
             raise ValueError("ValueError")
 
-        if not isinstance(self.__state, str):  # state verifications
+        if not isinstance(self.__state, int):  # state verifications
             raise TypeError("InvalidJSONFormat")
-        else:
-            try:
-                self.__state = int(self.__state)
-            except ValueError:
-                raise ValueError("ValueError")
-            if self.__state <= 0 or self.__state > 3:
-                raise ValueError("ValueError")
+        elif self.__state <= 0 or self.__state > 3:
+            raise ValueError("ValueError")
 
-        if not isinstance(self.__priority, str):  # priority verifications
+        if not isinstance(self.__priority, int):  # priority verifications
             raise TypeError("InvalidJSONFormat")
-        else:
-            try:
-                self.__priority = int(self.__priority)
-            except ValueError:
-                raise ValueError("ValueError")
-            if self.__priority <= 0 or self.__priority > 3:
-                raise ValueError("ValueError")
+        elif self.__priority <= 0 or self.__priority > 3:
+            raise ValueError("ValueError")
 
         if not isinstance(self.__date, str):  # date verifications
             raise TypeError("InvalidJSONFormat")
@@ -64,22 +54,14 @@ class Task:
             raise TypeError("InvalidJSONFormat")
         else:
             for label_id in self.__labels_id:
-                if not isinstance(label_id, str):
-                    raise ValueError("ValueError")
-                try:
-                    int(label_id)
-                except ValueError:
+                if not isinstance(label_id, int):
                     raise ValueError("ValueError")
 
         if not isinstance(self.__users_id, list):  # users verifications
             raise TypeError("InvalidJSONFormat")
         else:
             for user_id in self.__users_id:
-                if not isinstance(user_id, str):
-                    raise ValueError("ValueError")
-                try:
-                    int(user_id)
-                except ValueError:
+                if not isinstance(user_id, int):
                     raise ValueError("ValueError")
 
     def get_name(self) -> str:
