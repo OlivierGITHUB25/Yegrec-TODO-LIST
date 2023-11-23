@@ -18,7 +18,8 @@ class Client:
         self.__cursor = cursor
         self.__database = database
         self.__auth = False
-        self.__user = ""
+        self.__user = None
+        self.__user_id = None
 
     def run(self):
         previous_msg = ""
@@ -39,7 +40,7 @@ class Client:
                 except TypeError:
                     self.send_error("InvalidJSONFormat", "Invalid json format")
                 except json.decoder.JSONDecodeError:
-                    return self.write_log("Invalid json format", "UNKNOWN_ERROR")
+                    return self.write_log(f"User {self.__user} disconnected", "CLIENT_DISCONNECTED")
                 finally:
                     previous_msg = received_message
 
@@ -68,7 +69,7 @@ class Client:
                     self.send_error("InvalidJSONFormat", "WRONG_ACTION")
 
         self.__conn.send("DISCONNECT".encode('utf-8'))
-        self.write_log("The socket has been closed", "CLOSED_SOCKET")
+        self.write_log(f"User {self.__user} disconnected", "CLIENT_DISCONNECTED")
 
     def login(self, output):
         try:
@@ -87,6 +88,7 @@ class Client:
                 if bcrypt.checkpw(password.encode('utf8'), item[2].encode('utf8')):
                     self.__auth = True
                     self.__user = item[1]
+                    self.__user_id = item[0]
                     self.write_log(f"Has logged with username {username}", "SUCCEED_AUTH")
                     return self.send_success()
                 else:
@@ -123,10 +125,10 @@ class Client:
             self.__cursor.execute(sql, (username, password_hash.decode('utf-8')))
             self.__database.commit()
         except mysql.connector.Error as error:
-            self.send_error("InternalError", error)
+            return self.send_error("InternalError", error)
 
         self.write_log(f"User {username} has been created", "USER_CREATED")
-        self.send_success()
+        return self.send_success()
 
     def create_task(self, output):
         if self.__auth:
@@ -138,21 +140,13 @@ class Client:
                 description = output.get("description", "")
                 labels_id = output.get("labels_id", [])
                 users_id = output.get("users_id", [])
-                task = Task(name, state, priority, date, description, labels_id=labels_id, users_id=users_id)
+                Task(name, state, priority, date, description, labels_id=labels_id, users_id=users_id)
             except AttributeError as error:
                 return self.send_error("InvalidJSONFormat", error)
             except TypeError:
                 return self.send_error("InvalidJSONFormat", "Invalid json format")
             except ValueError:
                 return self.send_error("ValueError", "Invalid value")
-
-            name = task.get_name()
-            state = task.get_state()
-            priority = task.get_priority()
-            date = task.get_date()
-            description = task.get_description()
-            users_id = task.get_users_id()
-            labels_id = task.get_labels_id()
 
             sql = ("INSERT INTO Task (name, state, priority, date, description)"
                    "VALUES (%s, %s, %s, %s, %s)")
@@ -215,19 +209,13 @@ class Client:
                 date = output.get("date", "")
                 task_id = output.get("task_id", "")
                 labels_id = output.get("labels_id", [])
-                sub_task = SubTask(name, state, date, task_id, labels_id)
+                SubTask(name, state, date, task_id, labels_id)
             except AttributeError as error:
                 return self.send_error("InvalidJSONFormat", error)
             except TypeError as error:
                 return self.send_error("InvalidJSONFormat", error)
             except ValueError as error:
                 return self.send_error("InvalidJSONFormat", error)
-
-            name = sub_task.get_name()
-            state = sub_task.get_state()
-            date = sub_task.get_date()
-            task_id = sub_task.get_task_id()
-            labels_id = sub_task.get_labels()
 
             sql = ("INSERT INTO Sub_Task (name, state, date, Task_idTask)"
                    "VALUES (%s, %s, %s, %s)")
@@ -266,7 +254,7 @@ class Client:
             try:
                 name = output.get("name", "")
                 color = output.get("color", "")
-                label = Label(name, color)
+                Label(name, color)
             except AttributeError as error:
                 return self.send_error("InvalidJSONFormat", error)
             except TypeError as error:
@@ -274,16 +262,16 @@ class Client:
             except ValueError as error:
                 return self.send_error("InvalidJSONFormat", error)
 
-            sql = ("INSERT INTO Label (name, color)"
-                   "VALUES (%s, %s)")
+            sql = ("INSERT INTO Label (name, color, User_idUser) "
+                   "VALUES (%s, %s, %s)")
 
             try:
-                self.__cursor.execute(sql, (name, color))
+                self.__cursor.execute(sql, (name, color, self.__user_id))
                 self.__database.commit()
             except mysql.connector.errors.IntegrityError as error:
-                self.send_error("LabelNameAlreadyExist", error)
+                return self.send_error("LabelNameAlreadyExist", error)
             except mysql.connector.Error as error:
-                self.send_error("InternalError", error)
+                return self.send_error("InternalError", error)
 
             return self.send_success()
 
