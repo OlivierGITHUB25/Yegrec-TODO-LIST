@@ -18,6 +18,11 @@ with socket.create_connection((hostname, 5000)) as sock:
         })
         conn.send(data.encode('utf-8'))
 
+        data = json.dumps({
+                "client": "get_users"
+        })
+        conn.send(data.encode('utf-8'))
+
         # data = json.dumps({
         #         "client": "get_tasks"
         # })
@@ -29,12 +34,12 @@ with socket.create_connection((hostname, 5000)) as sock:
         # })
         # conn.send(data.encode('utf-8'))
 
-        data = json.dumps({
-                "client": "create_label",
-                "name": "Security",
-                "color": "#FFFFFF",
-        })
-        conn.send(data.encode('utf-8'))
+        # data = json.dumps({
+        #         "client": "create_label",
+        #         "name": "Security",
+        #         "color": "#FFFFFF",
+        # })
+        # conn.send(data.encode('utf-8'))
 
         # data = json.dumps({
         #     "client": "create_task",

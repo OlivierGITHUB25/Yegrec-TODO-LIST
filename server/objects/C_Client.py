@@ -46,25 +46,31 @@ class Client:
 
                 if client_action == "login":
                     if self.login(output) == -1:
-                        client_action = "disconnect"
+                        client_action = "DISCONNECT"
                 elif client_action == "sign_up":
                     if self.sign_up(output) == -1:
-                        client_action = "disconnect"
+                        client_action = "DISCONNECT"
                 elif client_action == "create_task":
                     if self.create_task(output) == -1:
-                        client_action = "disconnect"
+                        client_action = "DISCONNECT"
                 elif client_action == "create_subtask":
                     if self.create_subtask(output) == -1:
-                        client_action = "disconnect"
+                        client_action = "DISCONNECT"
                 elif client_action == "create_label":
                     if self.create_label(output) == -1:
-                        client_action = "disconnect"
+                        client_action = "DISCONNECT"
                 elif client_action == "get_tasks":
                     if self.get_tasks() == -1:
-                        client_action = "disconnect"
+                        client_action = "DISCONNECT"
                 elif client_action == "get_subtasks":
                     if self.get_subtasks(output) == -1:
-                        client_action = "disconnect"
+                        client_action = "DISCONNECT"
+                elif client_action == "get_labels":
+                    if self.get_labels(output) == -1:
+                        client_action = "DISCONNECT"
+                elif client_action == "get_users":
+                    if self.get_users(output) == -1:
+                        client_action = "DISCONNECT"
                 else:
                     self.send_error("InvalidJSONFormat", "WRONG_ACTION")
 
@@ -338,7 +344,7 @@ class Client:
             except mysql.connector.Error as error:
                 return self.send_error("InternalError", error)
 
-            to_json_task = list()
+            to_json_subtask = list()
 
             for element in self.__cursor.fetchall():
                 sql = ("SELECT Label.idlabel "
@@ -355,9 +361,39 @@ class Client:
 
                 date_to_str = element[3].strftime('%Y-%m-%d %H:%M:%S')
                 task = {"subtask_id": element[0], "name": element[1], "state": element[2], "date": date_to_str, "description": element[4], "labels_id": labels_id}
-                to_json_task.append(task)
+                to_json_subtask.append(task)
 
-            return self.send_success(to_json_task)
+            return self.send_success(to_json_subtask)
+
+        else:
+            return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
+
+    def get_labels(self, output):
+        if self.__auth:
+            sql = ("SELECT idlabel, name, color "
+                   "FROM label")
+
+            try:
+                self.__cursor.execute(sql)
+            except mysql.connector.Error as error:
+                return self.send_error("InternalError", error)
+
+            return self.send_success([result for result in self.__cursor.fetchall()])
+
+        else:
+            return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
+
+    def get_users(self, output):
+        if self.__auth:
+            sql = ("SELECT idUser, username "
+                   "FROM user")
+
+            try:
+                self.__cursor.execute(sql)
+            except mysql.connector.Error as error:
+                return self.send_error("InternalError", error)
+
+            return self.send_success([result for result in self.__cursor.fetchall()])
 
         else:
             return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
