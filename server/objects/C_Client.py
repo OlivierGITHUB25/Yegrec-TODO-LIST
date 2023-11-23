@@ -66,15 +66,13 @@ class Client:
                     if self.get_subtasks(output) == -1:
                         client_action = "DISCONNECT"
                 elif client_action == "get_labels":
-                    if self.get_labels(output) == -1:
+                    if self.get_labels() == -1:
                         client_action = "DISCONNECT"
                 elif client_action == "get_users":
-                    if self.get_users(output) == -1:
+                    if self.get_users() == -1:
                         client_action = "DISCONNECT"
-                else:
-                    self.send_error("InvalidJSONFormat", "WRONG_ACTION")
 
-        self.__conn.send("DISCONNECT".encode('utf-8'))
+        self.send_success(server_answer="DISCONNECT")
         self.write_log(f"User {self.__user} disconnected", "CLIENT_DISCONNECTED")
 
     def login(self, output):
@@ -191,7 +189,7 @@ class Client:
                    "VALUES (%s, %s)")
 
             if len(labels_id) == 0:
-                self.__conn.send(self.json_maker("response", "yes").encode('utf-8'))
+                return self.send_success()
             else:
                 try:
                     for label in labels_id:
@@ -239,7 +237,7 @@ class Client:
                    "VALUES (%s, %s)")
 
             if len(labels_id) == 0:
-                self.__conn.send(self.json_maker("response", "yes").encode('utf-8'))
+                return self.send_success()
             else:
                 try:
                     for label in labels_id:
@@ -368,7 +366,7 @@ class Client:
         else:
             return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
 
-    def get_labels(self, output):
+    def get_labels(self):
         if self.__auth:
             sql = ("SELECT idlabel, name, color "
                    "FROM label")
@@ -383,7 +381,7 @@ class Client:
         else:
             return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
 
-    def get_users(self, output):
+    def get_users(self):
         if self.__auth:
             sql = ("SELECT idUser, username "
                    "FROM user")
@@ -403,18 +401,18 @@ class Client:
             date = datetime.datetime.now()
             log_file.write(date.strftime(f"%Y:%m:%d %H:%M:%S <{self.__address}> {event} : {message}\n"))
 
-    def send_error(self, event, message) -> int:
+    def send_error(self, event, message, server_answer="response") -> int:
         self.write_log(message, event)
         try:
-            self.__conn.send(self.json_maker("response", "no", event).encode('utf-8'))
+            self.__conn.send(self.json_maker(server_answer, "no", event).encode('utf-8'))
         except ssl.SSLEOFError as error:
             self.write_log("Client aborted connection", "ssl.SSLEOFError")
             return -1
         return 0
 
-    def send_success(self, content=None) -> int:
+    def send_success(self, content=None, server_answer="response") -> int:
         try:
-            self.__conn.send(self.json_maker("response", "yes", error=None, content=content).encode('utf-8'))
+            self.__conn.send(self.json_maker(server_answer, "yes", error=None, content=content).encode('utf-8'))
         except ssl.SSLEOFError:
             self.write_log("Client aborted connection", "ssl.SSLEOFError")
             return -1
@@ -423,15 +421,15 @@ class Client:
     @staticmethod
     def json_maker(server_answer, success, error=None, content=None):
         if content:
-            return json.dumps([{
+            return json.dumps({
                     "server": server_answer,
                     "success": success,
                     "error": error,
                     "content": content
-            }])
+            })
         else:
-            return json.dumps([{
+            return json.dumps({
                     "server": server_answer,
                     "success": success,
                     "error": error,
-            }])
+            })
