@@ -55,6 +55,9 @@ if __name__ == "__main__":
         except ConnectionAbortedError:
             print('Client aborted connection')
             continue
+        except ConnectionResetError:
+            print('Client aborted connection')
+            continue
 
         print(f"Client {ip}:{port} is connected !")
         client = Client(conn, ip, port, cursor, database)

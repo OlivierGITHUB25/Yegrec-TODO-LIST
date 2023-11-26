@@ -22,55 +22,55 @@ class Client:
         self.__user_id = None
 
     def run(self):
-        previous_msg = ""
-        client_action = ""
+        client_action = None
+        output = None
 
         self.write_log("Connection initialized", "NEW_SOCKET")
 
         while client_action != "DISCONNECT":
             buffer = self.__conn.recv(1024)
             received_message = buffer.decode('utf-8')
-            if received_message != previous_msg:
-                try:
-                    output = json.loads(received_message)
-                    client_action = output["client"]
-                    output.pop("client")
-                except KeyError:
-                    self.send_error("InvalidJSONFormat", "Invalid json format")
-                except TypeError:
-                    self.send_error("InvalidJSONFormat", "Invalid json format")
-                except json.decoder.JSONDecodeError:
-                    return self.write_log(f"User {self.__user} disconnected", "CLIENT_DISCONNECTED")
-                finally:
-                    previous_msg = received_message
 
-                if client_action == "login":
-                    if self.login(output) == -1:
-                        client_action = "DISCONNECT"
-                elif client_action == "sign_up":
-                    if self.sign_up(output) == -1:
-                        client_action = "DISCONNECT"
-                elif client_action == "create_task":
-                    if self.create_task(output) == -1:
-                        client_action = "DISCONNECT"
-                elif client_action == "create_subtask":
-                    if self.create_subtask(output) == -1:
-                        client_action = "DISCONNECT"
-                elif client_action == "create_label":
-                    if self.create_label(output) == -1:
-                        client_action = "DISCONNECT"
-                elif client_action == "get_tasks":
-                    if self.get_tasks() == -1:
-                        client_action = "DISCONNECT"
-                elif client_action == "get_subtasks":
-                    if self.get_subtasks(output) == -1:
-                        client_action = "DISCONNECT"
-                elif client_action == "get_labels":
-                    if self.get_labels() == -1:
-                        client_action = "DISCONNECT"
-                elif client_action == "get_users":
-                    if self.get_users() == -1:
-                        client_action = "DISCONNECT"
+            try:
+                output = json.loads(received_message)
+                client_action = output["client"]
+                output.pop("client")
+            except KeyError:
+                self.send_error("InvalidJSONFormat", "Invalid json format")
+            except TypeError:
+                self.send_error("InvalidJSONFormat", "Invalid json format")
+            except json.decoder.JSONDecodeError:
+                return self.write_log(f"User {self.__user} disconnected", "CLIENT_DISCONNECTED")
+
+            if client_action == "login":
+                if self.login(output) == -1:
+                    client_action = "DISCONNECT"
+            elif client_action == "sign_up":
+                if self.sign_up(output) == -1:
+                    client_action = "DISCONNECT"
+            elif client_action == "create_task":
+                if self.create_task(output) == -1:
+                    client_action = "DISCONNECT"
+            elif client_action == "create_subtask":
+                if self.create_subtask(output) == -1:
+                    client_action = "DISCONNECT"
+            elif client_action == "create_label":
+                if self.create_label(output) == -1:
+                    client_action = "DISCONNECT"
+            elif client_action == "get_tasks":
+                if self.get_tasks() == -1:
+                    client_action = "DISCONNECT"
+            elif client_action == "get_subtasks":
+                if self.get_subtasks(output) == -1:
+                    client_action = "DISCONNECT"
+            elif client_action == "get_labels":
+                if self.get_labels() == -1:
+                    client_action = "DISCONNECT"
+            elif client_action == "get_users":
+                if self.get_users() == -1:
+                    client_action = "DISCONNECT"
+            else:
+                self.send_error("InvalidJSONFormat", "Invalid json format")
 
         self.send_success(server_answer="DISCONNECT")
         self.write_log(f"User {self.__user} disconnected", "CLIENT_DISCONNECTED")
