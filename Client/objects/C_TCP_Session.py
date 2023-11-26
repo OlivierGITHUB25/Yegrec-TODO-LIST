@@ -11,6 +11,7 @@ class TCPSession:
         self.__context.load_verify_locations("./cert/CA.crt")
         self.__data = None
         self.__connected = False
+        self.__error = None
         self.__init_connection()
 
     def init_connection(self):
