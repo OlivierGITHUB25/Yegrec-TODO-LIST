@@ -1,81 +1,137 @@
 import sys
 from PyQt5 import QtWidgets, QtGui, QtCore
 
+# Fenêtre de dialogue pour la création de tâche
+class TaskCreationWindow(QtWidgets.QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Add New Task")
+        self.setGeometry(100, 100, 300, 200)
+        self.setStyleSheet("background-color: black; color: white;")
+        self.init_ui()
+    
+    def init_ui(self):
+        layout = QtWidgets.QVBoxLayout(self)
+        
+        # Nom de la tâche
+        self.name_input = QtWidgets.QLineEdit()
+        self.name_input.setPlaceholderText("Task Name")
+        self.name_input.setStyleSheet("background-color: black; border: 1px solid cyan; color: cyan;")
+        
+        # Description de la tâche
+        self.description_input = QtWidgets.QTextEdit()
+        self.description_input.setPlaceholderText("Task Description")
+        self.description_input.setStyleSheet("background-color: black; border: 1px solid cyan; color: cyan;")
+        
+        # Priorité de la tâche
+        self.priority_input = QtWidgets.QComboBox()
+        self.priority_input.addItems(["1", "2", "3"])
+        self.priority_input.setStyleSheet("background-color: black; border: 1px solid cyan; color: cyan;")
+        
+        # Date de la tâche
+        self.date_input = QtWidgets.QDateTimeEdit(QtCore.QDateTime.currentDateTime())
+        self.date_input.setDisplayFormat("yyyy-MM-dd HH:mm")
+        self.date_input.setStyleSheet("background-color: black; border: 1px solid cyan; color: cyan;")
+        
+        # Bouton pour ajouter la tâche
+        add_task_btn = QtWidgets.QPushButton("Add Task")
+        add_task_btn.setStyleSheet("QPushButton {background-color: cyan; color: white;} QPushButton::hover {background-color: white; color: black;}")
+        add_task_btn.clicked.connect(self.accept)
+        
+        # Ajout des widgets au layout
+        layout.addWidget(self.name_input)
+        layout.addWidget(self.description_input)
+        layout.addWidget(self.priority_input)
+        layout.addWidget(self.date_input)
+        layout.addWidget(add_task_btn)
+    
+    def get_task_details(self):
+        return {
+            'name': self.name_input.text(),
+            'description': self.description_input.toPlainText(),
+            'priority': self.priority_input.currentText(),
+            'date': self.date_input.dateTime().toString("yyyy-MM-dd HH:mm")
+        }
+
 # Classe principale pour l'application de to-do list
 class TodoListApp(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
-        self.init_ui()  # Initialiser l'interface utilisateur
+        self.tasks = []
+        self.init_ui()
 
-    # Initialiser l'interface utilisateur
     def init_ui(self):
-        self.setWindowTitle("To-Do List")  # Définir le titre de la fenêtre
-        self.setGeometry(100, 100, 400, 600)  # Définir la taille et la position
-        self.setStyleSheet("background-color: black; color: white;")  # Définir le style de base
+        self.setWindowTitle("To-Do List")
+        self.setGeometry(100, 100, 400, 600)
+        self.setStyleSheet("background-color: black; color: white;")
 
-        layout = QtWidgets.QVBoxLayout()  # Créer un layout vertical
+        layout = QtWidgets.QVBoxLayout()
 
-        # Créer et configurer le titre de la to-do list
+        # Titre de la fenêtre
         title = QtWidgets.QLabel("To-Do List")
-        title.setAlignment(QtCore.Qt.AlignCenter)  # Centrer le titre
-        title.setFont(QtGui.QFont('Arial', 24))  # Définir la police et la taille
+        title.setAlignment(QtCore.Qt.AlignCenter)
+        title.setFont(QtGui.QFont('Arial', 24))
 
-        # Créer la zone de saisie pour les nouvelles tâches
-        self.task_input = QtWidgets.QLineEdit()
-        self.task_input.setPlaceholderText("Enter a new task...")
-        self.task_input.setStyleSheet("background-color: black; border: 1px solid cyan; border-radius: 5px; color: cyan; padding: 5px;")
+        # Bouton pour ajouter une nouvelle tâche
+        add_task_btn = QtWidgets.QPushButton("Add Task")
+        add_task_btn.setStyleSheet("QPushButton {background-color: cyan; color: white;} QPushButton::hover {background-color: white; color: black;}")
+        add_task_btn.clicked.connect(self.show_task_creation_dialog)
 
-        # Créer le sélecteur de date et heure
-        self.date_time_selector = QtWidgets.QDateTimeEdit(QtCore.QDateTime.currentDateTime())
-        self.date_time_selector.setDisplayFormat("yyyy-MM-dd HH:mm")
-        self.date_time_selector.setStyleSheet("background-color: black; color: cyan; border: 1px solid cyan; padding: 5px;")
+        # Bouton pour supprimer la tâche sélectionnée
+        delete_button = QtWidgets.QPushButton("Delete Selected Task")
+        delete_button.setStyleSheet("QPushButton {background-color: red; color: white;} QPushButton::hover {background-color: white; color: black;}")
+        delete_button.clicked.connect(self.delete_task)
 
-        # Créer le bouton pour ajouter une nouvelle tâche
-        add_button = QtWidgets.QPushButton("Add Task")
-        add_button.setStyleSheet("QPushButton {background-color: cyan; border: 1px solid cyan; border-radius: 10px; padding: 5px; color: black;} QPushButton::hover {background-color: white;}")
+        # Menu déroulant pour le filtrage des tâches
+        self.filter_options = QtWidgets.QComboBox()
+        self.filter_options.addItem("Sort by Date")
+        self.filter_options.addItem("Sort by Priority")
+        self.filter_options.setStyleSheet("background-color: black; color: cyan; border: 1px solid cyan;")
+        self.filter_options.currentIndexChanged.connect(self.apply_filter)
 
-        # Créer la liste des tâches
+        # Liste des tâches
         self.tasks_list = QtWidgets.QListWidget()
         self.tasks_list.setStyleSheet("background-color: black; border: 1px solid cyan; color: cyan; padding: 5px;")
 
-        # Créer le bouton pour supprimer la tâche sélectionnée
-        delete_button = QtWidgets.QPushButton("Delete Selected Task")
-        delete_button.setStyleSheet("QPushButton {background-color: red; border: 1px solid red; border-radius: 10px; padding: 5px; color: black;} QPushButton::hover {background-color: white;}")
-
-        # Connecter les boutons à leurs actions correspondantes
-        add_button.clicked.connect(self.add_task)
-        delete_button.clicked.connect(self.delete_task)
-
         # Ajouter les widgets au layout
         layout.addWidget(title)
-        layout.addWidget(self.task_input)
-        layout.addWidget(self.date_time_selector)
-        layout.addWidget(add_button)
+        layout.addWidget(add_task_btn)
+        layout.addWidget(self.filter_options)
         layout.addWidget(self.tasks_list)
         layout.addWidget(delete_button)
 
-        # Appliquer le layout à la fenêtre de l'application
         self.setLayout(layout)
 
-    # Ajouter une nouvelle tâche à la liste
-    def add_task(self):
-        task_text = self.task_input.text().strip()  # Récupérer le texte saisi et supprimer les espaces
-        task_date_time = self.date_time_selector.dateTime().toString("yyyy-MM-dd HH:mm")  # Récupérer la date et l'heure
-        if task_text:  # Si le texte n'est pas vide
-            task_with_date = f"{task_text} (Due: {task_date_time})"  # Formater la tâche avec la date
-            self.tasks_list.addItem(task_with_date)  # Ajouter la tâche à la liste
-            self.task_input.clear()  # Effacer le champ de saisie
+    def show_task_creation_dialog(self):
+        dialog = TaskCreationWindow()
+        if dialog.exec_() == QtWidgets.QDialog.Accepted:
+            task_details = dialog.get_task_details()
+            self.tasks.append(task_details)
+            self.apply_filter()
 
-    # Supprimer la tâche sélectionnée de la liste
     def delete_task(self):
-        selected_items = self.tasks_list.selectedItems()  # Récupérer les éléments sélectionnés
-        if selected_items:  # Si un élément est sélectionné
-            for item in selected_items:
-                self.tasks_list.takeItem(self.tasks_list.row(item))  # Supprimer l'élément de la liste
+        selected_item = self.tasks_list.currentRow()
+        if selected_item >= 0:
+            del self.tasks[selected_item]
+            self.apply_filter()
 
-# Point d'entrée de l'application
+    def apply_filter(self):
+        sort_key = self.filter_options.currentText()
+        if sort_key == "Sort by Date":
+            self.tasks.sort(key=lambda x: x['date'])
+        elif sort_key == "Sort by Priority":
+            self.tasks.sort(key=lambda x: x['priority'], reverse=True)
+        self.update_tasks_list()
+
+    def update_tasks_list(self):
+        self.tasks_list.clear()
+        for task in self.tasks:
+            display_text = f"{task['name']} - Priority: {task['priority']} - Due: {task['date']} - {task['description']}"
+            list_item = QtWidgets.QListWidgetItem(display_text)
+            self.tasks_list.addItem(list_item)
+
 if __name__ == "__main__":
-    app = QtWidgets.QApplication(sys.argv)  # Créer une application PyQt
-    window = TodoListApp()  # Instancier la fenêtre de la to-do list
-    window.show()  # Afficher la fenêtre
-    sys.exit(app.exec_())  # Exécuter l'application
+    app = QtWidgets.QApplication(sys.argv)
+    window = TodoListApp()
+    window.show()
+    sys.exit(app.exec_())

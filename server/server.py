@@ -1,63 +1,144 @@
-from objects.Client import Client
-from colorama import Fore, Style
-import mysql.connector
-import threading
-import socket
-import ssl
 import sys
+from PyQt5 import QtWidgets, QtGui, QtCore
 
+# Fenêtre de dialogue pour la création de tâche
+class TaskCreationWindow(QtWidgets.QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Add New Task")
+        self.setGeometry(100, 100, 300, 200)
+        self.setStyleSheet("background-color: black; color: white;")
+        self.init_ui()
+    
+    def init_ui(self):
+        layout = QtWidgets.QVBoxLayout(self)
+        
+        # Nom de la tâche
+        self.name_input = QtWidgets.QLineEdit()
+        self.name_input.setPlaceholderText("Task Name")
+        self.name_input.setStyleSheet("background-color: black; border: 1px solid cyan; color: cyan;")
+        self.name_input.setFont(QtGui.QFont('Arial', 14))
+        
+        # Description de la tâche
+        self.description_input = QtWidgets.QTextEdit()
+        self.description_input.setPlaceholderText("Task Description")
+        self.description_input.setStyleSheet("background-color: black; border: 1px solid cyan; color: cyan;")
+        self.description_input.setFont(QtGui.QFont('Arial', 14))
+        
+        # Priorité de la tâche
+        self.priority_input = QtWidgets.QComboBox()
+        self.priority_input.addItems(["1", "2", "3"])
+        self.priority_input.setStyleSheet("background-color: black; border: 1px solid cyan; color: cyan;")
+        self.priority_input.setFont(QtGui.QFont('Arial', 14))
+        
+        # Date de la tâche
+        self.date_input = QtWidgets.QDateTimeEdit(QtCore.QDateTime.currentDateTime())
+        self.date_input.setDisplayFormat("yyyy-MM-dd HH:mm")
+        self.date_input.setStyleSheet("background-color: black; border: 1px solid cyan; color: cyan;")
+        self.date_input.setFont(QtGui.QFont('Arial', 14))
+        
+        # Bouton pour ajouter la tâche
+        add_task_btn = QtWidgets.QPushButton("Add Task")
+        add_task_btn.setStyleSheet("QPushButton {background-color: cyan; color: white;} QPushButton::hover {background-color: white; color: black;}")
+        add_task_btn.setFont(QtGui.QFont('Arial', 14))
+        add_task_btn.clicked.connect(self.accept)
+        
+        layout.addWidget(self.name_input)
+        layout.addWidget(self.description_input)
+        layout.addWidget(self.priority_input)
+        layout.addWidget(self.date_input)
+        layout.addWidget(add_task_btn)
+
+    def get_task_details(self):
+        return {
+            'name': self.name_input.text(),
+            'description': self.description_input.toPlainText(),
+            'priority': self.priority_input.currentText(),
+            'date': self.date_input.dateTime().toString("yyyy-MM-dd HH:mm")
+        }
+
+# Classe principale pour l'application de to-do list
+class TodoListApp(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.tasks = []
+        self.init_ui()
+
+    def init_ui(self):
+        self.setWindowTitle("To-Do List")
+        self.setGeometry(100, 100, 400, 600)
+        self.setStyleSheet("background-color: black; color: white;")
+
+        layout = QtWidgets.QVBoxLayout()
+
+        # Titre de la fenêtre
+        title = QtWidgets.QLabel("To-Do List")
+        title.setAlignment(QtCore.Qt.AlignCenter)
+        title.setFont(QtGui.QFont('Arial', 30))
+
+        # Bouton pour ajouter une nouvelle tâche
+        add_task_btn = QtWidgets.QPushButton("Add Task")
+        add_task_btn.setStyleSheet("QPushButton {background-color: cyan; color: white;} QPushButton::hover {background-color: white; color: black;}")
+        add_task_btn.setFont(QtGui.QFont('Arial', 14))
+        add_task_btn.clicked.connect(self.show_task_creation_dialog)
+
+        # Bouton pour supprimer la tâche sélectionnée
+        delete_button = QtWidgets.QPushButton("Delete Selected Task")
+        delete_button.setStyleSheet("QPushButton {background-color: red; color: white;} QPushButton::hover {background-color: white; color: black;}")
+        delete_button.setFont(QtGui.QFont('Arial', 14))
+        delete_button.clicked.connect(self.delete_task)
+
+        # Menu déroulant pour le filtrage des tâches
+        self.filter_options = QtWidgets.QComboBox()
+        self.filter_options.addItem("Sort by Date")
+        self.filter_options.addItem("Sort by Priority")
+        self.filter_options.setStyleSheet("background-color: black; color: cyan; border: 1px solid cyan;")
+        self.filter_options.setFont(QtGui.QFont('Arial', 14))
+        self.filter_options.currentIndexChanged.connect(self.apply_filter)
+
+        # Liste des tâches
+        self.tasks_list = QtWidgets.QListWidget()
+        self.tasks_list.setStyleSheet("background-color: black; border: 1px solid cyan; color: cyan; padding: 5px;")
+        self.tasks_list.setFont(QtGui.QFont('Arial', 14))
+
+        layout.addWidget(title)
+        layout.addWidget(add_task_btn)
+        layout.addWidget(self.filter_options)
+        layout.addWidget(self.tasks_list)
+        layout.addWidget(delete_button)
+
+        self.setLayout(layout)
+
+    def show_task_creation_dialog(self):
+        dialog = TaskCreationWindow()
+        if dialog.exec_() == QtWidgets.QDialog.Accepted:
+            task_details = dialog.get_task_details()
+            self.tasks.append(task_details)
+            self.apply_filter()
+
+    def delete_task(self):
+        selected_item = self.tasks_list.currentRow()
+        if selected_item >= 0:
+            del self.tasks[selected_item]
+            self.apply_filter()
+
+    def apply_filter(self):
+        sort_key = self.filter_options.currentText()
+        if sort_key == "Sort by Date":
+            self.tasks.sort(key=lambda x: x['date'])
+        elif sort_key == "Sort by Priority":
+            self.tasks.sort(key=lambda x: x['priority'], reverse=True)
+        self.update_tasks_list()
+
+    def update_tasks_list(self):
+        self.tasks_list.clear()
+        for task in self.tasks:
+            display_text = f"{task['name']} - Priority: {task['priority']} - Due: {task['date']} - {task['description']}"
+            list_item = QtWidgets.QListWidgetItem(display_text)
+            self.tasks_list.addItem(list_item)
 
 if __name__ == "__main__":
-    try:
-        if sys.argv[1] == "-p":
-            try:
-                nb = int(sys.argv[2])
-                port = nb
-            except ValueError as error:
-                raise ValueError("The value must be an integer")
-            if nb < 0 or nb > 65535:
-                raise ValueError("The value must be between 0 and 65534")
-        else:
-            raise ValueError("This argument does not exist")
-    except IndexError:
-        port = 5000
-
-    open_sockets = []
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    context.load_cert_chain('./certs/srv/YeGrec.pem', './certs/srv/YeGrec.key')
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-    server.bind(('127.0.0.1', port))
-    server.listen(5)
-    secure_sock = context.wrap_socket(server, server_side=True)
-
-    print("Trying to reach mysql server... ", end="")
-
-    try:
-        database = mysql.connector.connect(
-            host="127.0.0.1",
-            port="3306",
-            user="root",
-            password="toto",
-            database="YeGrec"
-        )
-        cursor = database.cursor(buffered=True)
-    except mysql.connector.errors.DatabaseError:
-        print(Fore.RED + "Failed")
-        print("Can't reach database server" + Style.RESET_ALL)
-        sys.exit(-1)
-
-    print(Fore.GREEN + "OK" + Style.RESET_ALL)
-
-    while True:
-        print("Waiting for connections...")
-        try:
-            (conn, (ip, port)) = secure_sock.accept()
-        except ConnectionAbortedError:
-            print('Client aborted connection')
-            continue
-
-        print(f"Client {ip}:{port} is connected !")
-        client = Client(conn, ip, port, cursor, database)
-        thread = threading.Thread(target=client.run())
-        thread.start()
-        open_sockets.append(thread)
+    app = QtWidgets.QApplication(sys.argv)
+    window = TodoListApp()
+    window.show()
+    sys.exit(app.exec_())
