@@ -26,7 +26,7 @@ if __name__ == "__main__":
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     context.load_cert_chain('./certs/srv/YeGrec.pem', './certs/srv/YeGrec.key')
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-    server.bind(('127.0.0.1', port))
+    server.bind(('0.0.0.0', port))
     server.listen(5)
     secure_sock = context.wrap_socket(server, server_side=True)
 
@@ -57,6 +57,9 @@ if __name__ == "__main__":
             continue
         except ConnectionResetError:
             print('Client aborted connection')
+            continue
+        except ssl.SSLError:
+            print('SSL handshake error')
             continue
 
         print(f"Client {ip}:{port} is connected !")

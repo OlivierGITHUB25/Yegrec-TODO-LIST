@@ -69,6 +69,9 @@ class Client:
             elif client_action == "get_users":
                 if self.get_users() == -1:
                     client_action = "DISCONNECT"
+            elif client_action == "update_task":
+                if self.update_task(output) == -1:
+                    client_action = "DISCONNECT"
             else:
                 self.send_error("InvalidJSONFormat", "Invalid json format")
 
@@ -392,6 +395,49 @@ class Client:
                 return self.send_error("InternalError", error)
 
             return self.send_success([result for result in self.__cursor.fetchall()])
+
+        else:
+            return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
+
+    def update_task(self, output): #TODO
+        if self.__auth:
+            try:
+                task_id = output.get("task_id", "")
+                name = output.get("name", "")
+                state = output.get("state", "")
+                priority = output.get("priority", "")
+                date = output.get("date", "")
+                description = output.get("description", "")
+                labels_id = output.get("labels_id", [])
+                users_id = output.get("users_id", [])
+                Task(name, state, priority, date, description, labels_id=labels_id, users_id=users_id)
+            except AttributeError as error:
+                return self.send_error("InvalidJSONFormat", error)
+            except TypeError as error:
+                return self.send_error("InvalidJSONFormat", error)
+            except ValueError as error:
+                return self.send_error("InvalidJSONFormat", error)
+
+            sql = ("SELECT Task_idTask "
+                   "FROM YeGrec.User_has_Task "
+                   "WHERE User_idUser = %s")
+
+            try:
+                self.__cursor.execute(sql, (self.__user_id,))
+            except mysql.connector.Error as error:
+                return self.send_error("InternalError", error)
+
+            authorized = False
+            for i in self.__cursor.fetchall():
+                if i[0] == task_id:
+                    authorized = True
+
+            if not authorized:
+                return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
+            else:
+                pass
+
+            print(self.__cursor.fetchall())
 
         else:
             return self.send_error("NotAuthorized", "NOT_AUTHORIZED")

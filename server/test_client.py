@@ -19,9 +19,22 @@ with socket.create_connection((hostname, 5000)) as sock:
         conn.send(data.encode('utf-8'))
 
         data = json.dumps({
-                "client": "get_users"
+                "client": "update_task",
+                "task_id": 45,
+                "name": "Switching",
+                "state": 1,
+                "priority": 2,
+                "date": "2023-10-20 00:00:00",
+                "description": "Description de test",
+                "labels_id": [7],
+                "users_id": [4, 5]
         })
         conn.send(data.encode('utf-8'))
+
+        # data = json.dumps({
+        #         "client": "get_users"
+        # })
+        # conn.send(data.encode('utf-8'))
 
         # data = json.dumps({
         #         "client": "get_tasks"
