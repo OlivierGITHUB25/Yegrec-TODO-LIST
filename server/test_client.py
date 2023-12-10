@@ -18,16 +18,42 @@ with socket.create_connection((hostname, 5000)) as sock:
         })
         conn.send(data.encode('utf-8'))
 
+        # data = json.dumps({
+        #         "client": "create_label",
+        #         "name": "label1 val",
+        #         "color": "#FFFFFF",
+        # })
+        # conn.send(data.encode('utf-8'))
+        #
+        # data = json.dumps({
+        #         "client": "create_label",
+        #         "name": "label2 val",
+        #         "color": "#FFFFFF",
+        # })
+        # conn.send(data.encode('utf-8'))
+
+        # data = json.dumps({
+        #     "client": "create_task",
+        #     "name": "tache olivier",
+        #     "state": 1,
+        #     "priority": 2,
+        #     "date": "2023-10-20 00:00:00",
+        #     "description": "Description de test",
+        #     "labels_id": [1, 2],
+        #     "users_id": []
+        # })
+        # conn.send(data.encode('utf-8'))
+
         data = json.dumps({
                 "client": "update_task",
-                "task_id": 45,
+                "task_id": 4,
                 "name": "Switching",
                 "state": 1,
                 "priority": 2,
                 "date": "2023-10-20 00:00:00",
                 "description": "Description de test",
-                "labels_id": [7],
-                "users_id": [4, 5]
+                "labels_id": [],
+                "users_id": []
         })
         conn.send(data.encode('utf-8'))
 
@@ -37,42 +63,40 @@ with socket.create_connection((hostname, 5000)) as sock:
         # conn.send(data.encode('utf-8'))
 
         # data = json.dumps({
-        #         "client": "get_tasks"
+        #         "client": "get_users"
         # })
         # conn.send(data.encode('utf-8'))
 
         # data = json.dumps({
         #         "client": "get_subtasks",
-        #         "task_id": 46
+        #         "task_id": 6
         # })
         # conn.send(data.encode('utf-8'))
 
         # data = json.dumps({
-        #         "client": "create_label",
-        #         "name": "Security",
-        #         "color": "#FFFFFF",
+        #         "client": "get_labels"
         # })
         # conn.send(data.encode('utf-8'))
 
         # data = json.dumps({
         #     "client": "create_task",
-        #     "name": "Switching",
+        #     "name": "val tâche 3",
         #     "state": 1,
         #     "priority": 2,
         #     "date": "2023-10-20 00:00:00",
         #     "description": "Description de test",
-        #     "labels_id": [7],
-        #     "users_id": [4, 5]
+        #     "labels_id": [],
+        #     "users_id": []
         # })
         # conn.send(data.encode('utf-8'))
 
         # data = json.dumps({
         #         "client": "create_subtask",
-        #         "name": "port sfp autre",
+        #         "name": "sous tache autre utilisateur",
         #         "state": 2,
         #         "date": "2023-10-20 00:00:00",
-        #         "task_id": 45,
-        #         "labels_id": [6, 8],
+        #         "task_id": 7,
+        #         "labels_id": [],
         # })
         # conn.send(data.encode('utf-8'))
 
