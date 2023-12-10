@@ -72,6 +72,9 @@ class Client:
             elif client_action == "update_task":
                 if self.update_task(output) == -1:
                     client_action = "DISCONNECT"
+            elif client_action == "update_subtask":
+                if self.update_subtask(output) == -1:
+                    client_action = "DISCONNECT"
             else:
                 self.send_error("InvalidJSONFormat", "Invalid json format")
 
@@ -211,7 +214,7 @@ class Client:
         else:
             return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
 
-    # Verified
+    # TODO: Check func
     def create_subtask(self, output):
         # Check if user is authenticated
         if self.__auth:
@@ -231,11 +234,11 @@ class Client:
                 return self.send_error("InvalidJSONFormat", error)
 
             sql = ("SELECT User_idUser FROM User_has_Task "
-                   "WHERE Task_idTask=%s")
+                   "WHERE Task_idTask = %s AND User_idUser = %s")
 
             # Checks if the user owns the task
             try:
-                self.__cursor.execute(sql, (task_id,))
+                self.__cursor.execute(sql, (task_id, self.__user_id))
                 result = self.__cursor.fetchall()
             except mysql.connector.Error as error:
                 return self.send_error("InternalError", error)
@@ -252,25 +255,25 @@ class Client:
             except mysql.connector.Error as error:
                 return self.send_error("InternalError", error)
 
-            sql = ("INSERT INTO Sub_Task_has_Label (Sub_Task_idSub_Task, Label_idLabel) "
-                   "VALUES (%s, %s)")
-
             # Check labels (committing to database)
             if len(labels_id) == 0:
                 self.__database.commit()
                 return self.send_success()
 
             sql = ("SELECT User_idUser FROM Label "
-                   "WHERE idlabel=%s")
+                   "WHERE idlabel = %s AND User_idUser = %s")
 
             # Checks if the user owns the label(s)
             try:
                 for label in labels_id:
-                    self.__cursor.execute(sql, (label,))
+                    self.__cursor.execute(sql, (label, self.__user_id))
                     if not self.__cursor.fetchall():
                         return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
             except mysql.connector.Error as error:
                 return self.send_error("InternalError", error)
+
+            sql = ("INSERT INTO Sub_Task_has_Label (Sub_Task_idSub_Task, Label_idLabel) "
+                   "VALUES (%s, %s)")
 
             # Try to insert label data (committing to database)
             try:
@@ -459,7 +462,7 @@ class Client:
         else:
             return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
 
-    # TODO
+    # TODO: labels and users
     def update_task(self, output):
         # Check if user is authenticated
         if self.__auth:
@@ -482,34 +485,68 @@ class Client:
                 return self.send_error("InvalidJSONFormat", error)
 
             sql = ("SELECT Task_idTask FROM User_has_Task "
-                   "WHERE User_idUser = %s")
+                   "WHERE User_idUser = %s AND Task_idTask = %s")
 
+            # Check if user own the task
             try:
-                self.__cursor.execute(sql, (self.__user_id,))
+                self.__cursor.execute(sql, (self.__user_id, task_id))
+                result = self.__cursor.fetchall()
+            except mysql.connector.Error as error:
+                return self.send_error("InternalError", error)
+            if not result:
+                return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
+
+            sql = ("UPDATE Task "
+                   "SET name = %s, state = %s, priority = %s, date = %s, description = %s "
+                   "WHERE idTask = %s")
+
+            # Try to update the task attributes
+            try:
+                self.__cursor.execute(sql, (name, state, priority, date, description, task_id))
+                task_id = self.__cursor.lastrowid
             except mysql.connector.Error as error:
                 return self.send_error("InternalError", error)
 
-            # Check if user own the task
-            authorized = False
-            for task in self.__cursor.fetchall():
-                if task[0] == task_id:
-                    authorized = True
+            return self.send_success()
 
-            if not authorized:
+        else:
+            return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
+
+    # TODO
+    def update_subtask(self, output):
+        # Check if user is authenticated
+        if self.__auth:
+            # Get output argument and check it
+            try:
+                name = output.get("name", "")
+                state = output.get("state", "")
+                date = output.get("date", "")
+                task_id = output.get("task_id", "")
+                labels_id = output.get("labels_id", [])
+                SubTask(name, state, date, task_id, labels_id)
+            except AttributeError as error:
+                return self.send_error("InvalidJSONFormat", error)
+            except TypeError as error:
+                return self.send_error("InvalidJSONFormat", error)
+            except ValueError as error:
+                return self.send_error("InvalidJSONFormat", error)
+
+            sql = ("SELECT * FROM User_has_Task "
+                   "INNER JOIN Task ON User_has_Task.Task_idTask = Task.idTask "
+                   "INNER JOIN Sub_Task ON Task.idTask = Sub_Task.Task_idTask "
+                   "WHERE User_has_Task.User_idUser = %s AND Task.idTask = %s")
+
+            # Checks if the user owns the sub_tasks
+            try:
+                self.__cursor.execute(sql, (self.__user_id, task_id,))
+                result = self.__cursor.fetchall()
+            except mysql.connector.Error as error:
+                return self.send_error("InternalError", error)
+            if not result:
                 return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
-            else:
-                sql = ("UPDATE Task "
-                       "SET name = %s, state = %s, priority = %s, date = %s, description = %s "
-                       "WHERE idTask = %s")
 
-                # Try to update the task attributes
-                try:
-                    self.__cursor.execute(sql, (name, state, priority, date, description, task_id))
-                    task_id = self.__cursor.lastrowid
-                except mysql.connector.Error as error:
-                    return self.send_error("InternalError", error)
+            print(result)
 
-                return self.send_success()
         else:
             return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
 

@@ -39,23 +39,23 @@ with socket.create_connection((hostname, 5000)) as sock:
         #     "priority": 2,
         #     "date": "2023-10-20 00:00:00",
         #     "description": "Description de test",
-        #     "labels_id": [1, 2],
+        #     "labels_id": [],
         #     "users_id": []
         # })
         # conn.send(data.encode('utf-8'))
 
-        data = json.dumps({
-                "client": "update_task",
-                "task_id": 4,
-                "name": "Switching",
-                "state": 1,
-                "priority": 2,
-                "date": "2023-10-20 00:00:00",
-                "description": "Description de test",
-                "labels_id": [],
-                "users_id": []
-        })
-        conn.send(data.encode('utf-8'))
+        # data = json.dumps({
+        #         "client": "update_task",
+        #         "task_id": 4,
+        #         "name": "Switching",
+        #         "state": 1,
+        #         "priority": 2,
+        #         "date": "2023-10-20 00:00:00",
+        #         "description": "Description de test",
+        #         "labels_id": [],
+        #         "users_id": []
+        # })
+        # conn.send(data.encode('utf-8'))
 
         # data = json.dumps({
         #         "client": "get_users"
@@ -90,15 +90,15 @@ with socket.create_connection((hostname, 5000)) as sock:
         # })
         # conn.send(data.encode('utf-8'))
 
-        # data = json.dumps({
-        #         "client": "create_subtask",
-        #         "name": "sous tache autre utilisateur",
-        #         "state": 2,
-        #         "date": "2023-10-20 00:00:00",
-        #         "task_id": 7,
-        #         "labels_id": [],
-        # })
-        # conn.send(data.encode('utf-8'))
+        data = json.dumps({
+                "client": "create_subtask",
+                "name": "Sous-tâche val",
+                "state": 2,
+                "date": "2023-10-20 00:00:00",
+                "task_id": 2,
+                "labels_id": [],
+        })
+        conn.send(data.encode('utf-8'))
 
         while True:
             msg = ""
