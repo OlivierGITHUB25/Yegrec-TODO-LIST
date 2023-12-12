@@ -91,9 +91,9 @@ class TodoListApp(QtWidgets.QMainWindow):
         layout = QtWidgets.QVBoxLayout(central_widget)
 
         # Titre de la fenêtre
-        title = QtWidgets.QLabel("Ye'Grec")
-        title.setAlignment(QtCore.Qt.AlignCenter)
-        title.setFont(QtGui.QFont('Arial', 24))
+        self.title = QtWidgets.QLabel("Ye'Grec")
+        self.title.setAlignment(QtCore.Qt.AlignCenter)
+        self.title.setFont(QtGui.QFont('Arial', 24))
 
         # Bouton pour ajouter une nouvelle tâche
         add_task_btn = QtWidgets.QPushButton("Add Task")
@@ -119,31 +119,50 @@ class TodoListApp(QtWidgets.QMainWindow):
 
         # Bouton pour supprimer la tâche sélectionnée
         delete_button = QtWidgets.QPushButton("Delete Selected Task")
+        delete_button.setObjectName("deleteButton")  # Set objectName for this button
         delete_button.clicked.connect(self.delete_task)
 
+
         # Ajouter les widgets au layout
-        layout.addWidget(title)
+        layout.addWidget(self.title)
         layout.addWidget(add_task_btn)
         layout.addLayout(sort_buttons_layout)
         layout.addWidget(self.tasks_list)
         layout.addWidget(delete_button)
 
         # Set the initial theme
-        self.set_theme("light")
+        self.set_theme("dark")
 
     def set_theme(self, theme):
         if theme == "light":
-            self.setStyleSheet("QMainWindow { background-color: white; color: black; }")
-            button_style = "QPushButton { background-color: rgba(0,201,177,255); color: white; }" \
-                           "QPushButton::hover { background-color: white; color: black; }"
+            self.setStyleSheet("""
+                QMainWindow { background-color: white; color: black; font-weight: bold; }
+                QLabel { color: black; font-weight: bold; }
+                QPushButton { background-color: rgba(0,201,177,255); color: white; border-radius:5%; padding: 5px 2px; font-weight: bold; }
+                QPushButton::hover { background-color: grey; color: white; }
+                QListWidget { background-color: white; color: black; font-weight: bold; }
+                QLineEdit { background-color: white; color: black; font-weight: bold; }
+                QTextEdit { background-color: white; color: black; font-weight: bold; }
+                QPushButton#deleteButton { background-color: red; color: white; border-radius:5%; padding: 7px 2px; font-weight: bold; }
+                QPushButton#deleteButton::hover { background-color: lightcoral; color: white; }
+            """)
         elif theme == "dark":
-            self.setStyleSheet("QMainWindow { background-color: black; color: white; }")
-            button_style = "QPushButton { background-color: rgba(0,201,177,255); color: white; }" \
-                           "QPushButton::hover { background-color: black; color: white; }"
-        
+            self.setStyleSheet("""
+                QMainWindow { background-color: black; color: white; font-weight: bold; }
+                QLabel { color: white; font-weight: bold; }
+                QPushButton { background-color: rgba(0,201,177,255); color: white; border-radius:5%; padding: 5px 2px; font-weight: bold; }
+                QPushButton::hover { background-color: grey; color: black; }
+                QListWidget { background-color: black; color: white; font-weight: bold; }
+                QLineEdit { background-color: black; color: white; font-weight: bold; }
+                QTextEdit { background-color: black; color: white; font-weight: bold; }
+                QPushButton#deleteButton { background-color: red; color: white; border-radius:5%; padding: 7px 2px; font-weight: bold; }
+                QPushButton#deleteButton::hover { background-color: darkred; color: white; }
+            """)
+
         # Apply styles to all buttons
         for button in self.findChildren(QtWidgets.QPushButton):
-            button.setStyleSheet(button_style)
+            button.setStyleSheet(self.styleSheet())
+
 
     def open_github(self):
         webbrowser.open("https://github.com/TheWilli67/YeGrec")
