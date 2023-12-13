@@ -12,75 +12,76 @@ class AboutDialog(QtWidgets.QDialog):
         version_label = QtWidgets.QLabel("alpha V0.1", self)
         layout.addWidget(version_label)
 
-# Fenêtre de dialogue pour la création de tâche
+# Fenêtre de dialogue pour la création et la modification de tâche
 class TaskCreationWindow(QtWidgets.QDialog):
-    def __init__(self):
+    def __init__(self, task=None):
         super().__init__()
-        self.setWindowTitle("Add New Task")
+        self.task = task or {}
+        self.setWindowTitle("Task Details")
         self.setGeometry(100, 100, 300, 200)
         layout = QtWidgets.QVBoxLayout(self)
         
         # Nom de la tâche
-        self.name_input = QtWidgets.QLineEdit()
+        self.name_input = QtWidgets.QLineEdit(self.task.get('name', ''))
         self.name_input.setPlaceholderText("Task Name")
         
         # Description de la tâche
-        self.description_input = QtWidgets.QTextEdit()
+        self.description_input = QtWidgets.QTextEdit(self.task.get('description', ''))
         self.description_input.setPlaceholderText("Task Description")
         
         # Priorité de la tâche
         self.priority_input = QtWidgets.QComboBox()
         self.priority_input.addItems(["1", "2", "3"])
+        priority_index = self.priority_input.findText(self.task.get('priority', '1'))
+        self.priority_input.setCurrentIndex(priority_index)
         
         # Date de la tâche
-        self.date_input = QtWidgets.QDateTimeEdit(QtCore.QDateTime.currentDateTime())
+        date = QtCore.QDateTime.fromString(self.task.get('date', QtCore.QDateTime.currentDateTime().toString("yyyy-MM-dd HH:mm")), "yyyy-MM-dd HH:mm")
+        self.date_input = QtWidgets.QDateTimeEdit(date)
         self.date_input.setDisplayFormat("yyyy-MM-dd HH:mm")
         
-        # Bouton pour ajouter la tâche
-        add_task_btn = QtWidgets.QPushButton("Add Task")
-        add_task_btn.clicked.connect(self.accept)
+        # Bouton pour sauvegarder la tâche
+        save_task_btn = QtWidgets.QPushButton("Save Task")
+        save_task_btn.clicked.connect(self.accept)
         
         layout.addWidget(self.name_input)
         layout.addWidget(self.description_input)
         layout.addWidget(self.priority_input)
         layout.addWidget(self.date_input)
-        layout.addWidget(add_task_btn)
-
-        # Liste pour stocker les sous-tâches
-        self.subtasks = []
+        layout.addWidget(save_task_btn)
 
     def get_task_details(self):
         return {
             'name': self.name_input.text(),
             'description': self.description_input.toPlainText(),
             'priority': self.priority_input.currentText(),
-            'date': self.date_input.dateTime().toString("yyyy-MM-dd HH:mm"),
-            'subtasks': self.subtasks
+            'date': self.date_input.dateTime().toString("yyyy-MM-dd HH:mm")
         }
 
-# Fenêtre de dialogue pour la création de sous-tâche
+# Fenêtre de dialogue pour la création et la modification de sous-tâche
 class SubTaskCreationWindow(QtWidgets.QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Add New Subtask")
+    def __init__(self, subtask=None):
+        super().__init__()
+        self.subtask = subtask or {}
+        self.setWindowTitle("Subtask Details")
         self.setGeometry(100, 100, 300, 150)
         layout = QtWidgets.QVBoxLayout(self)
         
         # Nom de la sous-tâche
-        self.name_input = QtWidgets.QLineEdit()
+        self.name_input = QtWidgets.QLineEdit(self.subtask.get('name', ''))
         self.name_input.setPlaceholderText("Subtask Name")
         
         # Description de la sous-tâche
-        self.description_input = QtWidgets.QTextEdit()
+        self.description_input = QtWidgets.QTextEdit(self.subtask.get('description', ''))
         self.description_input.setPlaceholderText("Subtask Description")
         
-        # Bouton pour ajouter la sous-tâche
-        add_subtask_btn = QtWidgets.QPushButton("Add Subtask")
-        add_subtask_btn.clicked.connect(self.accept)
+        # Bouton pour sauvegarder la sous-tâche
+        save_subtask_btn = QtWidgets.QPushButton("Save Subtask")
+        save_subtask_btn.clicked.connect(self.accept)
         
         layout.addWidget(self.name_input)
         layout.addWidget(self.description_input)
-        layout.addWidget(add_subtask_btn)
+        layout.addWidget(save_subtask_btn)
 
     def get_subtask_details(self):
         return {
@@ -151,10 +152,10 @@ class TodoListApp(QtWidgets.QMainWindow):
 
         # Liste des tâches
         self.tasks_list = QtWidgets.QListWidget()
+        self.tasks_list.itemClicked.connect(self.edit_task_or_subtask)
 
         # Bouton pour supprimer la tâche sélectionnée
         delete_button = QtWidgets.QPushButton("Delete Selected Task")
-        delete_button.setObjectName("deleteButton")  # Set objectName for this button
         delete_button.clicked.connect(self.delete_task)
 
         # Ajouter les widgets au layout
@@ -167,8 +168,74 @@ class TodoListApp(QtWidgets.QMainWindow):
         # Set the initial theme
         self.set_theme("dark")
 
-    # Méthodes pour la classe TodoListApp (set_theme, open_github, etc.)
-    # ...
+    # ... [Méthodes de TodoListApp, y compris update_tasks_list, edit_task_or_subtask, etc.] ...
+
+# ... [Reste du code, y compris le point d'entrée principal] ...
+    # ... [Suite de la classe TodoListApp] ...
+
+    def update_tasks_list(self):
+        self.tasks_list.clear()
+        for index, task in enumerate(self.tasks):
+            task_text = f"{task['name']}: {task['description']} | {task['date']}"
+            task_item = QtWidgets.QListWidgetItem(task_text)
+            self.tasks_list.addItem(task_item)
+            task_item.setData(QtCore.Qt.UserRole, (index, None))
+
+            for subindex, subtask in enumerate(task.get('subtasks', [])):
+                subtask_text = f"    → {subtask['name']}: {subtask['description']}"
+                subtask_item = QtWidgets.QListWidgetItem(subtask_text)
+                subtask_item.setFont(QtGui.QFont('Arial', 10))
+                self.tasks_list.addItem(subtask_item)
+                subtask_item.setData(QtCore.Qt.UserRole, (index, subindex))
+
+        self.tasks_list.itemClicked.connect(self.edit_task_or_subtask)
+
+    def edit_task_or_subtask(self, item):
+        indexes = item.data(QtCore.Qt.UserRole)
+        if indexes[1] is None:  # It's a main task
+            task = self.tasks[indexes[0]]
+            dialog = TaskCreationWindow(task)
+            if dialog.exec_() == QtWidgets.QDialog.Accepted:
+                self.tasks[indexes[0]] = dialog.get_task_details()
+                self.update_tasks_list()
+        else:  # It's a subtask
+            subtask = self.tasks[indexes[0]]['subtasks'][indexes[1]]
+            dialog = SubTaskCreationWindow(subtask)
+            if dialog.exec_() == QtWidgets.QDialog.Accepted:
+                self.tasks[indexes[0]]['subtasks'][indexes[1]] = dialog.get_subtask_details()
+                self.update_tasks_list()
+
+    # ... [Autres méthodes pour les thèmes, ouvrir GitHub, etc.] ...
+    # ... [Suite de la classe TodoListApp] ...
+
+    def set_theme(self, theme):
+        if theme == "light":
+            self.setStyleSheet("""
+                QMainWindow { background-color: white; color: black; }
+                QLabel { color: black; }
+                QPushButton { background-color: lightgrey; color: black; border: none; padding: 5px; }
+                QPushButton::hover { background-color: grey; color: white; }
+                QListWidget { background-color: white; color: black; }
+                QLineEdit { background-color: white; color: black; }
+                QTextEdit { background-color: white; color: black; }
+            """)
+        elif theme == "dark":
+            self.setStyleSheet("""
+                QMainWindow { background-color: #282828; color: white; }
+                QLabel { color: white; }
+                QPushButton { background-color: #505050; color: white; border: none; padding: 5px; }
+                QPushButton::hover { background-color: #606060; color: white; }
+                QListWidget { background-color: #383838; color: white; }
+                QLineEdit { background-color: #383838; color: white; }
+                QTextEdit { background-color: #383838; color: white; }
+            """)
+
+    def open_github(self):
+        webbrowser.open("https://github.com/TheWilli67/YeGrec")
+
+    def show_version(self):
+        about_dialog = AboutDialog()
+        about_dialog.exec_()
 
     def show_task_creation_dialog(self):
         dialog = TaskCreationWindow()
@@ -185,82 +252,14 @@ class TodoListApp(QtWidgets.QMainWindow):
 
     def apply_filter(self, filter_type):
         if filter_type == "date":
-            self.tasks.sort(key=lambda x: x['date'])
+        # Trier les tâches par date
+            self.tasks.sort(key=lambda x: QtCore.QDateTime.fromString(x['date'], "yyyy-MM-dd HH:mm"))
         elif filter_type == "priority":
-            self.tasks.sort(key=lambda x: x['priority'], reverse=True)
+        # Trier les tâches par priorité (en supposant que 1 est la plus haute priorité)
+            self.tasks.sort(key=lambda x: int(x['priority']))
+
         self.update_tasks_list()
 
-    def update_tasks_list(self):
-        self.tasks_list.clear()
-        for task in self.tasks:
-            # Créer un widget personnalisé pour chaque tâche
-            task_widget = QtWidgets.QWidget()
-            task_layout = QtWidgets.QHBoxLayout(task_widget)
-
-            # Texte de la tâche
-            task_label = QtWidgets.QLabel(f"{task['name']} - Priority: {task['priority']} - Due: {task['date']}")
-            task_layout.addWidget(task_label)
-
-            # Bouton pour ajouter une sous-tâche
-            add_subtask_btn = QtWidgets.QPushButton("+")
-            add_subtask_btn.clicked.connect(lambda: self.add_subtask(task))
-            task_layout.addWidget(add_subtask_btn)
-
-            # Ajouter le widget de la tâche à la liste
-            list_item = QtWidgets.QListWidgetItem(self.tasks_list)
-            list_item.setSizeHint(task_widget.sizeHint())
-            self.tasks_list.addItem(list_item)
-            self.tasks_list.setItemWidget(list_item, task_widget)
-
-    def add_subtask(self, task):
-        dialog = SubTaskCreationWindow()
-        if dialog.exec_() == QtWidgets.QDialog.Accepted:
-            subtask_details = dialog.get_subtask_details()
-            task['subtasks'].append(subtask_details)
-            self.update_tasks_list()
-
-# ... [Reste du code, y compris le point d'entrée principal] ...
-# ... [Les classes de la Partie 1 et Partie 2 vont ici] ...
-
-    # D'autres méthodes de TodoListApp si nécessaire
-    # ...
-
-    def set_theme(self, theme):
-        if theme == "light":
-            self.setStyleSheet("""
-                QMainWindow { background-color: white; color: black; font-weight: bold; }
-                QLabel { color: black; font-weight: bold; }
-                QPushButton { background-color: rgba(0,201,177,255); color: white; border-radius:5%; padding: 5px 2px; font-weight: bold; }
-                QPushButton::hover { background-color: grey; color: white; }
-                QListWidget { background-color: white; color: black; font-weight: bold; }
-                QLineEdit { background-color: white; color: black; font-weight: bold; }
-                QTextEdit { background-color: white; color: black; font-weight: bold; }
-                QPushButton#deleteButton { background-color: red; color: white; border-radius:5%; padding: 7px 2px; font-weight: bold; }
-                QPushButton#deleteButton::hover { background-color: lightcoral; color: white; }
-            """)
-        elif theme == "dark":
-            self.setStyleSheet("""
-                QMainWindow { background-color: black; color: white; font-weight: bold; }
-                QLabel { color: white; font-weight: bold; }
-                QPushButton { background-color: rgba(0,201,177,255); color: white; border-radius:5%; padding: 5px 2px; font-weight: bold; }
-                QPushButton::hover { background-color: grey; color: black; }
-                QListWidget { background-color: black; color: white; font-weight: bold; }
-                QLineEdit { background-color: black; color: white; font-weight: bold; }
-                QTextEdit { background-color: black; color: white; font-weight: bold; }
-                QPushButton#deleteButton { background-color: red; color: white; border-radius:5%; padding: 7px 2px; font-weight: bold; }
-                QPushButton#deleteButton::hover { background-color: darkred; color: white; }
-            """)
-
-        # Apply styles to all buttons
-        for button in self.findChildren(QtWidgets.QPushButton):
-            button.setStyleSheet(self.styleSheet())
-
-    def open_github(self):
-        webbrowser.open("https://github.com/TheWilli67/YeGrec")
-
-    def show_version(self):
-        about_dialog = AboutDialog()
-        about_dialog.exec_()
 
 # Point d'entrée principal
 if __name__ == "__main__":
