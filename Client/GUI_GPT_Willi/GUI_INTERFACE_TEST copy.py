@@ -168,27 +168,41 @@ class TodoListApp(QtWidgets.QMainWindow):
         # Set the initial theme
         self.set_theme("dark")
 
-    # ... [Méthodes de TodoListApp, y compris update_tasks_list, edit_task_or_subtask, etc.] ...
+    # ... [Autres méthodes de TodoListApp] ...
 
 # ... [Reste du code, y compris le point d'entrée principal] ...
-    # ... [Suite de la classe TodoListApp] ...
-
     def update_tasks_list(self):
-        self.tasks_list.clear()
-        for index, task in enumerate(self.tasks):
-            task_text = f"{task['name']}: {task['description']} | {task['date']}"
-            task_item = QtWidgets.QListWidgetItem(task_text)
-            self.tasks_list.addItem(task_item)
-            task_item.setData(QtCore.Qt.UserRole, (index, None))
+            self.tasks_list.clear()
+            for index, task in enumerate(self.tasks):
+                task_text = f"{task['name']}: {task['description']} | {task['date']}"
+                task_item = QtWidgets.QListWidgetItem(task_text)
+                self.tasks_list.addItem(task_item)
+                task_item.setData(QtCore.Qt.UserRole, (index, None))
 
-            for subindex, subtask in enumerate(task.get('subtasks', [])):
-                subtask_text = f"    → {subtask['name']}: {subtask['description']}"
-                subtask_item = QtWidgets.QListWidgetItem(subtask_text)
-                subtask_item.setFont(QtGui.QFont('Arial', 10))
-                self.tasks_list.addItem(subtask_item)
-                subtask_item.setData(QtCore.Qt.UserRole, (index, subindex))
+                # Ajout du bouton "+" pour chaque tâche principale
+                add_subtask_widget = QtWidgets.QWidget()
+                add_subtask_layout = QtWidgets.QHBoxLayout(add_subtask_widget)
+                add_subtask_layout.addStretch()  # Pour aligner le bouton à droite
+                add_subtask_btn = QtWidgets.QPushButton("+")
+                add_subtask_btn.clicked.connect(lambda _, i=index: self.add_subtask(i))
+                add_subtask_layout.addWidget(add_subtask_btn)
+                self.tasks_list.setItemWidget(task_item, add_subtask_widget)
 
-        self.tasks_list.itemClicked.connect(self.edit_task_or_subtask)
+                for subindex, subtask in enumerate(task.get('subtasks', [])):
+                    subtask_text = f"    → {subtask['name']}: {subtask['description']}"
+                    subtask_item = QtWidgets.QListWidgetItem(subtask_text)
+                    subtask_item.setFont(QtGui.QFont('Arial', 10))
+                    self.tasks_list.addItem(subtask_item)
+                    subtask_item.setData(QtCore.Qt.UserRole, (index, subindex))
+
+    def add_subtask(self, task_index):
+        dialog = SubTaskCreationWindow()
+        if dialog.exec_() == QtWidgets.QDialog.Accepted:
+            subtask_details = dialog.get_subtask_details()
+            if 'subtasks' not in self.tasks[task_index]:
+                self.tasks[task_index]['subtasks'] = []
+            self.tasks[task_index]['subtasks'].append(subtask_details)
+            self.update_tasks_list()
 
     def edit_task_or_subtask(self, item):
         indexes = item.data(QtCore.Qt.UserRole)
@@ -198,6 +212,7 @@ class TodoListApp(QtWidgets.QMainWindow):
             if dialog.exec_() == QtWidgets.QDialog.Accepted:
                 self.tasks[indexes[0]] = dialog.get_task_details()
                 self.update_tasks_list()
+                
         else:  # It's a subtask
             subtask = self.tasks[indexes[0]]['subtasks'][indexes[1]]
             dialog = SubTaskCreationWindow(subtask)
@@ -205,30 +220,45 @@ class TodoListApp(QtWidgets.QMainWindow):
                 self.tasks[indexes[0]]['subtasks'][indexes[1]] = dialog.get_subtask_details()
                 self.update_tasks_list()
 
-    # ... [Autres méthodes pour les thèmes, ouvrir GitHub, etc.] ...
-    # ... [Suite de la classe TodoListApp] ...
-
     def set_theme(self, theme):
-        if theme == "light":
-            self.setStyleSheet("""
-                QMainWindow { background-color: white; color: black; }
-                QLabel { color: black; }
-                QPushButton { background-color: lightgrey; color: black; border: none; padding: 5px; }
-                QPushButton::hover { background-color: grey; color: white; }
-                QListWidget { background-color: white; color: black; }
-                QLineEdit { background-color: white; color: black; }
-                QTextEdit { background-color: white; color: black; }
-            """)
-        elif theme == "dark":
-            self.setStyleSheet("""
-                QMainWindow { background-color: #282828; color: white; }
-                QLabel { color: white; }
-                QPushButton { background-color: #505050; color: white; border: none; padding: 5px; }
-                QPushButton::hover { background-color: #606060; color: white; }
-                QListWidget { background-color: #383838; color: white; }
-                QLineEdit { background-color: #383838; color: white; }
-                QTextEdit { background-color: #383838; color: white; }
-            """)
+            if theme == "light":
+                self.setStyleSheet("""
+                    QMainWindow { background-color: white; color: black; }
+                    QLabel { color: black; }
+                    QPushButton { 
+                        background-color: lightgrey; 
+                        color: black; 
+                        border: none; 
+                        padding: 5px; 
+                        border-radius: 10px; /* Ajout de bords arrondis */
+                    }
+                    QPushButton::hover { 
+                        background-color: grey; 
+                        color: white; 
+                    }
+                    QListWidget { background-color: white; color: black; }
+                    QLineEdit { background-color: white; color: black; }
+                    QTextEdit { background-color: white; color: black; }
+                """)
+            elif theme == "dark":
+                self.setStyleSheet("""
+                    QMainWindow { background-color: #282828; color: white; }
+                    QLabel { color: white; }
+                    QPushButton { 
+                        background-color: #505050; 
+                        color: white; 
+                        border: none; 
+                        padding: 5px; 
+                        border-radius: 10px; /* Ajout de bords arrondis */
+                    }
+                    QPushButton::hover { 
+                        background-color: #606060; 
+                        color: white; 
+                    }
+                    QListWidget { background-color: #383838; color: white; }
+                    QLineEdit { background-color: #383838; color: white; }
+                    QTextEdit { background-color: #383838; color: white; }
+                """)
 
     def open_github(self):
         webbrowser.open("https://github.com/TheWilli67/YeGrec")
@@ -252,14 +282,10 @@ class TodoListApp(QtWidgets.QMainWindow):
 
     def apply_filter(self, filter_type):
         if filter_type == "date":
-        # Trier les tâches par date
             self.tasks.sort(key=lambda x: QtCore.QDateTime.fromString(x['date'], "yyyy-MM-dd HH:mm"))
         elif filter_type == "priority":
-        # Trier les tâches par priorité (en supposant que 1 est la plus haute priorité)
             self.tasks.sort(key=lambda x: int(x['priority']))
-
         self.update_tasks_list()
-
 
 # Point d'entrée principal
 if __name__ == "__main__":
