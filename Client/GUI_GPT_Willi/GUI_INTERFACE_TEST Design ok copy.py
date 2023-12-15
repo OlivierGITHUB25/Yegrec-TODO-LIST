@@ -5,12 +5,15 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 # Compteur global pour l'identifiant des tâches
 task_id_counter = 0
 
+
 def get_next_task_id():
     global task_id_counter
     task_id_counter += 1
     return task_id_counter
 
 # Fenêtre de dialogue pour la version
+
+
 class AboutDialog(QtWidgets.QDialog):
     def __init__(self):
         super().__init__()
@@ -21,6 +24,8 @@ class AboutDialog(QtWidgets.QDialog):
         layout.addWidget(version_label)
 
 # Fenêtre de dialogue pour la création de tâche
+
+
 class TaskCreationWindow(QtWidgets.QDialog):
     def __init__(self):
         super().__init__()
@@ -34,7 +39,8 @@ class TaskCreationWindow(QtWidgets.QDialog):
         self.description_input.setPlaceholderText("Task Description")
         self.priority_input = QtWidgets.QComboBox()
         self.priority_input.addItems(["Low", "Medium", "High"])
-        self.date_input = QtWidgets.QDateTimeEdit(QtCore.QDateTime.currentDateTime())
+        self.date_input = QtWidgets.QDateTimeEdit(
+            QtCore.QDateTime.currentDateTime())
         self.date_input.setDisplayFormat("yyyy-MM-dd HH:mm")
         add_task_btn = QtWidgets.QPushButton("Add Task")
         add_task_btn.clicked.connect(self.accept)
@@ -56,6 +62,8 @@ class TaskCreationWindow(QtWidgets.QDialog):
         }
 
 # Fenêtre de dialogue pour la création de sous-tâche
+
+
 class SubTaskCreationWindow(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -82,6 +90,8 @@ class SubTaskCreationWindow(QtWidgets.QDialog):
         }
 
 # Classe principale pour l'application de to-do list
+
+
 class TodoListApp(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -89,7 +99,7 @@ class TodoListApp(QtWidgets.QMainWindow):
         self.init_ui()
 
     def init_ui(self):
-        self.setWindowTitle("Todo List App")
+        self.setWindowTitle("Ye'Grec")
         self.setGeometry(100, 100, 400, 600)
 
         menu_bar = self.menuBar()
@@ -111,7 +121,7 @@ class TodoListApp(QtWidgets.QMainWindow):
         self.setCentralWidget(central_widget)
         layout = QtWidgets.QVBoxLayout(central_widget)
 
-        self.title = QtWidgets.QLabel("Todo List App")
+        self.title = QtWidgets.QLabel("Ye'Grec")
         self.title.setAlignment(QtCore.Qt.AlignCenter)
         self.title.setFont(QtGui.QFont('Arial', 24))
 
@@ -122,7 +132,8 @@ class TodoListApp(QtWidgets.QMainWindow):
         sort_date_btn = QtWidgets.QPushButton("Sort by Date")
         sort_date_btn.clicked.connect(lambda: self.apply_filter("date"))
         sort_priority_btn = QtWidgets.QPushButton("Sort by Priority")
-        sort_priority_btn.clicked.connect(lambda: self.apply_filter("priority"))
+        sort_priority_btn.clicked.connect(
+            lambda: self.apply_filter("priority"))
         sort_buttons_layout.addWidget(sort_date_btn)
         sort_buttons_layout.addWidget(sort_priority_btn)
 
@@ -199,21 +210,24 @@ class TodoListApp(QtWidgets.QMainWindow):
             subtask_details = dialog.get_subtask_details()
             task['subtasks'].append(subtask_details)
             self.update_tasks_list()
-    
+
     def delete_task(self):
         selected_item = self.tasks_list.currentRow()
         if selected_item >= 0:
-            item_data = self.tasks_list.item(selected_item).data(QtCore.Qt.UserRole)
+            item_data = self.tasks_list.item(
+                selected_item).data(QtCore.Qt.UserRole)
             task_id, parent_task_id = item_data
 
             if parent_task_id is None:
                 # Suppression d'une tâche principale
-                self.tasks = [task for task in self.tasks if task['id'] != task_id]
+                self.tasks = [
+                    task for task in self.tasks if task['id'] != task_id]
             else:
                 # Suppression d'une sous-tâche
                 for task in self.tasks:
                     if task['id'] == parent_task_id:
-                        task['subtasks'] = [subtask for subtask in task['subtasks'] if subtask['id'] != task_id]
+                        task['subtasks'] = [
+                            subtask for subtask in task['subtasks'] if subtask['id'] != task_id]
                         break
 
             self.update_tasks_list()
@@ -223,14 +237,23 @@ class TodoListApp(QtWidgets.QMainWindow):
         for task in self.tasks:
             self.add_task_to_list(task, is_subtask=False)
             for subtask in task['subtasks']:
-                self.add_task_to_list(subtask, is_subtask=True, parent_task_id=task['id'])
+                self.add_task_to_list(
+                    subtask, is_subtask=True, parent_task_id=task['id'])
 
     def add_task_to_list(self, task, is_subtask, parent_task_id=None):
         widget = QtWidgets.QWidget()
         layout = QtWidgets.QHBoxLayout(widget)
 
-        label_text = "    - " + task['name'] if is_subtask else task['name']
-        task_label = QtWidgets.QLabel(label_text)
+        # Formatage du texte de la tâche ou de la sous-tâche
+        if is_subtask:
+            label_text = f"    - {task['name']} : {task['description']}"
+            task_label = QtWidgets.QLabel(label_text)
+            # Style pour les sous-tâches
+            task_label.setStyleSheet("background-color: #f0f0f0;")
+        else:
+            label_text = f"{task['name']} : {task['description']} | {task['date']}"
+            task_label = QtWidgets.QLabel(label_text)
+
         layout.addWidget(task_label)
 
         if not is_subtask:
@@ -240,7 +263,10 @@ class TodoListApp(QtWidgets.QMainWindow):
 
         list_item = QtWidgets.QListWidgetItem(self.tasks_list)
         list_item.setData(QtCore.Qt.UserRole, (task['id'], parent_task_id))
-        list_item.setSizeHint(widget.sizeHint())
+
+        # Réduire la hauteur du QListWidgetItem
+        list_item.setSizeHint(QtCore.QSize(0, 40))
+
         self.tasks_list.addItem(list_item)
         self.tasks_list.setItemWidget(list_item, widget)
 
@@ -250,6 +276,7 @@ class TodoListApp(QtWidgets.QMainWindow):
         elif filter_type == "priority":
             self.tasks.sort(key=lambda x: x['priority'])
         self.update_tasks_list()
+
 
 # Point d'entrée principal
 if __name__ == "__main__":
