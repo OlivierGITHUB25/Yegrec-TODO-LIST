@@ -235,6 +235,7 @@ class TodoListApp(QtWidgets.QMainWindow):
 
         if not is_subtask:
             add_subtask_btn = QtWidgets.QPushButton("+")
+            add_subtask_btn.setFixedWidth(30)  # Définit la largeur du bouton
             add_subtask_btn.clicked.connect(lambda: self.add_subtask(task))
             layout.addWidget(add_subtask_btn)
 
