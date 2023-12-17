@@ -19,8 +19,16 @@ with socket.create_connection((hostname, 5000)) as sock:
         conn.send(data.encode('utf-8'))
 
         # data = json.dumps({
+        #     "client": "update_label",
+        #     "label_id": 2,
+        #     "name": "label1 valentin modifié",
+        #     "color": "#FFFFFF",
+        # })
+        # conn.send(data.encode('utf-8'))
+
+        # data = json.dumps({
         #         "client": "create_label",
-        #         "name": "label1 val",
+        #         "name": "label1 olivier",
         #         "color": "#FFFFFF",
         # })
         # conn.send(data.encode('utf-8'))
@@ -67,11 +75,11 @@ with socket.create_connection((hostname, 5000)) as sock:
         # })
         # conn.send(data.encode('utf-8'))
 
-        # data = json.dumps({
-        #         "client": "get_subtasks",
-        #         "task_id": 6
-        # })
-        # conn.send(data.encode('utf-8'))
+        data = json.dumps({
+                "client": "get_subtasks",
+                "task_id": 1
+        })
+        conn.send(data.encode('utf-8'))
 
         # data = json.dumps({
         #         "client": "get_labels"
@@ -90,15 +98,15 @@ with socket.create_connection((hostname, 5000)) as sock:
         # })
         # conn.send(data.encode('utf-8'))
 
-        data = json.dumps({
-                "client": "create_subtask",
-                "name": "Sous-tâche val",
-                "state": 2,
-                "date": "2023-10-20 00:00:00",
-                "task_id": 2,
-                "labels_id": [],
-        })
-        conn.send(data.encode('utf-8'))
+        # data = json.dumps({
+        #         "client": "create_subtask",
+        #         "name": "Sous-tâche val 2",
+        #         "state": 2,
+        #         "date": "2023-10-20 00:00:00",
+        #         "task_id": 1,
+        #         "labels_id": [1],
+        # })
+        # conn.send(data.encode('utf-8'))
 
         while True:
             msg = ""

@@ -75,13 +75,16 @@ class Client:
             elif client_action == "update_subtask":
                 if self.update_subtask(output) == -1:
                     client_action = "DISCONNECT"
+            elif client_action == "update_label":
+                if self.update_label(output) == -1:
+                    client_action = "DISCONNECT"
             else:
                 self.send_error("InvalidJSONFormat", "Invalid json format")
 
         self.send_success(server_answer="DISCONNECT")
         self.write_log(f"User {self.__user} disconnected", "CLIENT_DISCONNECTED")
 
-    # Verified
+    # OK
     def login(self, output):
         # Get output arguments
         try:
@@ -111,7 +114,7 @@ class Client:
 
         return self.send_error("BadPasswordOrUsername", "WRONG_USERNAME")
 
-    # Verified
+    # OK
     def sign_up(self, output):
         # Get output arguments and check them
         try:
@@ -147,7 +150,7 @@ class Client:
         self.write_log(f"User {username} has been created", "USER_CREATED")
         return self.send_success()
 
-    # Verified
+    # OK
     def create_task(self, output):
         # Check if user is authenticated
         if self.__auth:
@@ -214,7 +217,7 @@ class Client:
         else:
             return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
 
-    # TODO: Check func
+    # OK
     def create_subtask(self, output):
         # Check if user is authenticated
         if self.__auth:
@@ -260,7 +263,7 @@ class Client:
                 self.__database.commit()
                 return self.send_success()
 
-            sql = ("SELECT User_idUser FROM Label "
+            sql = ("SELECT idlabel FROM Label "
                    "WHERE idlabel = %s AND User_idUser = %s")
 
             # Checks if the user owns the label(s)
@@ -290,7 +293,7 @@ class Client:
         else:
             return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
 
-    # Verified
+    # OK
     def create_label(self, output):
         # Check if user is authenticated
         if self.__auth:
@@ -321,7 +324,7 @@ class Client:
         else:
             return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
 
-    # Verified
+    # OK
     def get_tasks(self):
         # Check if user is authenticated
         if self.__auth:
@@ -372,7 +375,7 @@ class Client:
         else:
             return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
 
-    # Verified
+    # OK
     def get_subtasks(self, output):
         # Check if user is authenticated
         if self.__auth:
@@ -386,14 +389,27 @@ class Client:
             except ValueError as error:
                 return self.send_error("InvalidJSONFormat", error)
 
-            sql = ("SELECT * FROM User_has_Task "
-                   "INNER JOIN Task ON User_has_Task.Task_idTask = Task.idTask "
-                   "INNER JOIN Sub_Task ON Task.idTask = Sub_Task.Task_idTask "
-                   "WHERE User_has_Task.User_idUser = %s AND Task.idTask = %s")
+            sql = ("SELECT * FROM Task "
+                   "INNER JOIN User_has_Task ON Task.idTask = User_has_Task.Task_idTask "
+                   "INNER JOIN User ON User_has_Task.User_idUser = User.idUser "
+                   "WHERE User.idUser = %s AND Task.idTask = %s")
 
-            # Checks if the user owns the sub_tasks
+            # Checks if the user owns the task
             try:
-                self.__cursor.execute(sql, (self.__user_id, task_id,))
+                self.__cursor.execute(sql, (self.__user_id, task_id))
+                result = self.__cursor.fetchall()
+            except mysql.connector.Error as error:
+                print(error)
+                return self.send_error("InternalError", error)
+            if not result:
+                return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
+
+            sql = ("SELECT * FROM Sub_Task "
+                   "WHERE Task_idTask = %s")
+
+            # Try to retrieve subtasks
+            try:
+                self.__cursor.execute(sql, (task_id,))
                 result = self.__cursor.fetchall()
             except mysql.connector.Error as error:
                 return self.send_error("InternalError", error)
@@ -404,8 +420,7 @@ class Client:
 
             # Add labels for each subtask (if exist)
             for element in result:
-                sql = ("SELECT Label.idlabel "
-                       "FROM Label "
+                sql = ("SELECT idlabel FROM Label "
                        "INNER JOIN Sub_Task_has_Label ON Label.idlabel = Sub_Task_has_Label.Label_idLabel "
                        "INNER JOIN Sub_Task ON Sub_Task_has_Label.Sub_Task_idSub_Task = Sub_Task.idSub_Task "
                        "WHERE Sub_Task.idSub_Task = %s")
@@ -426,7 +441,7 @@ class Client:
         else:
             return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
 
-    # Verified
+    # OK
     def get_labels(self):
         # Check if user is authenticated
         if self.__auth:
@@ -444,7 +459,7 @@ class Client:
         else:
             return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
 
-    # Verified
+    # OK
     def get_users(self):
         # Check if user is authenticated
         if self.__auth:
@@ -462,7 +477,7 @@ class Client:
         else:
             return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
 
-    # TODO: labels and users
+    # NOK: labels and users
     def update_task(self, output):
         # Check if user is authenticated
         if self.__auth:
@@ -503,7 +518,7 @@ class Client:
             # Try to update the task attributes
             try:
                 self.__cursor.execute(sql, (name, state, priority, date, description, task_id))
-                task_id = self.__cursor.lastrowid
+                self.__database.commit()
             except mysql.connector.Error as error:
                 return self.send_error("InternalError", error)
 
@@ -512,7 +527,7 @@ class Client:
         else:
             return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
 
-    # TODO
+    # NOK
     def update_subtask(self, output):
         # Check if user is authenticated
         if self.__auth:
@@ -550,13 +565,58 @@ class Client:
         else:
             return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
 
-    # Verified
+    # OK
+    def update_label(self, output):
+        # Check if user is authenticated
+        if self.__auth:
+            # Get output argument and check it
+            try:
+                label_id = output.get("label_id", "")
+                name = output.get("name", "")
+                color = output.get("color", "")
+                Label(name, color)
+            except AttributeError as error:
+                return self.send_error("InvalidJSONFormat", error)
+            except TypeError as error:
+                return self.send_error("InvalidJSONFormat", error)
+            except ValueError as error:
+                return self.send_error("InvalidJSONFormat", error)
+
+            sql = ("SELECT idlabel FROM Label "
+                   "WHERE User_idUser = %s AND idlabel = %s")
+
+            # Check if user own the task
+            try:
+                self.__cursor.execute(sql, (self.__user_id, label_id))
+                result = self.__cursor.fetchall()
+            except mysql.connector.Error as error:
+                return self.send_error("InternalError", error)
+            if not result:
+                return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
+
+            sql = ("UPDATE Label "
+                   "SET name = %s, color = %s "
+                   "WHERE idlabel = %s")
+
+            # Try to update the task attributes
+            try:
+                self.__cursor.execute(sql, (name, color, label_id))
+                self.__database.commit()
+            except mysql.connector.Error as error:
+                return self.send_error("InternalError", error)
+
+            return self.send_success()
+
+        else:
+            return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
+
+    # OK
     def write_log(self, message, event):
         with open("log.txt", "a") as log_file:
             date = datetime.datetime.now()
             log_file.write(date.strftime(f"%Y:%m:%d %H:%M:%S {self.__address[0]}:{self.__address[1]} {event} : {message}\n"))
 
-    # Verified
+    # OK
     def send_error(self, event, message, server_answer="response") -> int:
         self.__database.rollback()
         self.write_log(message, event)
@@ -567,7 +627,7 @@ class Client:
             return -1
         return 0
 
-    # Verified
+    # OK
     def send_success(self, content=None, server_answer="response") -> int:
         self.__database.rollback()
         try:
@@ -577,7 +637,7 @@ class Client:
             return -1
         return 0
 
-    # Verified
+    # OK
     @staticmethod
     def json_maker(server_answer, success, error=None, content=None):
         if content:
