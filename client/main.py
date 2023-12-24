@@ -11,18 +11,21 @@ class LoginWindow(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         self.TCP_Session = None
-        self.setWindowTitle("Login Page")
-        self.setGeometry(100, 100, 300, 150)
+        self.setWindowTitle("YeGrec's Login Page")
+        self.setGeometry(100, 100, 400, 225)
+        self.setStyleSheet(self.css_loader('../client/styles/styles.css'))
         self.grid = QtWidgets.QGridLayout()
         self.setLayout(self.grid)
         self.show_login()
         self.connect()
 
     def show_login(self):
-        username_label = QtWidgets.QLabel("Username:")
-        password_label = QtWidgets.QLabel("Password:")
+        username_label = QtWidgets.QLabel("Username")
+        password_label = QtWidgets.QLabel("Password")
         self.username_input = QtWidgets.QLineEdit()
+        self.username_input.setText("valentin")
         self.password_input = QtWidgets.QLineEdit()
+        self.password_input.setText("azerty68")
         login_button = QtWidgets.QPushButton("Login")
         sign_up_button = QtWidgets.QPushButton("Sign up")
         quit_button = QtWidgets.QPushButton("Quit")
@@ -44,9 +47,9 @@ class LoginWindow(QtWidgets.QWidget):
     def show_sign_up(self):
         self.clear()
 
-        username_label = QtWidgets.QLabel("Username:")
-        password_label = QtWidgets.QLabel("Password:")
-        password_label_repeat = QtWidgets.QLabel("Repeat password:")
+        username_label = QtWidgets.QLabel("Username")
+        password_label = QtWidgets.QLabel("Password")
+        password_label_repeat = QtWidgets.QLabel("Repeat password")
         self.username_input = QtWidgets.QLineEdit()
         self.password_input = QtWidgets.QLineEdit()
         self.password_input_repeat = QtWidgets.QLineEdit()
@@ -169,6 +172,13 @@ class LoginWindow(QtWidgets.QWidget):
             InfoBox("Connection lost", QtWidgets.QMessageBox.Icon.Critical)
         finally:
             event.accept()
+
+    @staticmethod
+    def css_loader(filename):
+        with open(filename, 'r') as rd:
+            content = rd.read()
+            rd.close()
+        return content
 
 
 if __name__ == "__main__":
