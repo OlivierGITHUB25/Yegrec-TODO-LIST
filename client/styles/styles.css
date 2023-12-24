@@ -17,3 +17,7 @@ QLineEdit {
 QLabel {
     font-family: arial;
 }
+
+#task {
+    border: 1px solid #999999;
+}

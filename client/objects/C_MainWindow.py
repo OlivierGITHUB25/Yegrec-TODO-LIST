@@ -1,8 +1,9 @@
 import ssl
-from PyQt5 import QtWidgets
+import sys
 from PyQt5 import QtWidgets, QtGui, QtCore
 
 from .C_Infobox import InfoBox
+
 
 class MainWindow(QtWidgets.QWidget):
     def __init__(self, tcp_session):
@@ -14,6 +15,8 @@ class MainWindow(QtWidgets.QWidget):
         self.setLayout(self.grid)
         self.verticalLayout = QtWidgets.QVBoxLayout()
         self.grid.addLayout(self.verticalLayout, 0, 0)
+        self.tasks = self.get_task()
+        print(self.tasks)
         self.init_ui()
 
     def init_ui(self):
@@ -55,6 +58,7 @@ class MainWindow(QtWidgets.QWidget):
         self.actionListUsers.setIcon(icon5)
         self.actionQuit = QtWidgets.QAction("Quit")
         self.actionQuit.setIcon(icon6)
+        self.actionQuit.triggered.connect(self.closeEvent)
 
         self.menuAbout = QtWidgets.QMenu("About")
 
@@ -102,14 +106,21 @@ class MainWindow(QtWidgets.QWidget):
         self.pushButton_6 = QtWidgets.QPushButton()
         self.pushButton_6.setIcon(icon6)
         self.pushButton_6.setIconSize(QtCore.QSize(32, 32))
+        self.pushButton_6.clicked.connect(self.closeEvent)
 
         # Second line (scroll area)
 
         self.scrollArea = QtWidgets.QScrollArea()
-        self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 477, 563))
-        self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
-        self.scrollArea.setWidget(self.scrollAreaWidgetContents)
+        self.scrollArea.setWidgetResizable(True)
+
+        content_widget = QtWidgets.QWidget(self.scrollArea)
+        self.scrollArea.setWidget(content_widget)
+
+        self.layout = QtWidgets.QVBoxLayout(content_widget)
+        self.layout.setAlignment(QtCore.Qt.AlignTop)
+
+        for i in range(0, 50):
+            self.layout.addWidget(self.add_tasks_to_scroll_area())
 
         # Third line (horizontal layout)
 
@@ -150,16 +161,74 @@ class MainWindow(QtWidgets.QWidget):
         self.verticalLayout.addWidget(self.scrollArea)
         self.verticalLayout.addLayout(self.horizontalLayout_2)
 
-    def closeEvent(self, event):
-        try:
-            self.TCP_Session.send_data({
-                "client": "DISCONNECT",
-            })
-            print(self.TCP_Session.get_data())
-        except ssl.SSLEOFError:
-            InfoBox("Connection lost", QtWidgets.QMessageBox.Icon.Critical)
-        finally:
-            event.accept()
+    def closeEvent(self, event, **kwargs):
+        reply = QtWidgets.QMessageBox.question(self, 'Quit', 'Are you sure you want to quit YeGrec ?',
+                                               QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                               QtWidgets.QMessageBox.No)
+
+        if reply == QtWidgets.QMessageBox.Yes:
+            try:
+                self.TCP_Session.send_data({
+                    "client": "DISCONNECT",
+                })
+                print(self.TCP_Session.get_data())
+            except ssl.SSLEOFError:
+                InfoBox("Connection lost", QtWidgets.QMessageBox.Icon.Critical)
+            finally:
+                if type(event) is not bool:
+                    event.accept()
+                else:
+                    sys.exit()
+        else:
+            if type(event) is not bool:
+                event.ignore()
+
+    def get_task(self):
+        self.TCP_Session.send_data({
+            "client": "get_tasks",
+        })
+        return self.TCP_Session.get_data()["content"]
+
+    def add_tasks_to_scroll_area(self):
+        self.task_widget = QtWidgets.QWidget()
+        self.task_widget.setFixedHeight(50)
+        widgetLayout = QtWidgets.QGridLayout()
+
+        task_label = QtWidgets.QLabel("Task 1")
+
+        task_label_state = QtWidgets.QLabel("State:")
+        task_label_state.setAlignment(QtCore.Qt.AlignRight)
+        task_state = QtWidgets.QLabel("HIGH")
+
+        task_label_priority = QtWidgets.QLabel("Priority:")
+        task_label_priority.setAlignment(QtCore.Qt.AlignRight)
+        task_priority = QtWidgets.QLabel("FINISHED")
+
+        task_label_deadline = QtWidgets.QLabel("Deadline:")
+        task_label_deadline.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight)
+        task_deadline = QtWidgets.QLabel("20/15/2003")
+        task_deadline.setAlignment(QtCore.Qt.AlignVCenter)
+
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap("../client/assets/settings.svg"))
+        task_button = QtWidgets.QPushButton()
+        task_button.setIcon(icon)
+        task_button.setIconSize(QtCore.QSize(24, 24))
+
+        widgetLayout.addWidget(task_label, 0, 0, 2, 1)
+        widgetLayout.addWidget(task_label_priority, 0, 1, 1, 1)
+        widgetLayout.addWidget(task_priority, 0, 2, 1, 1)
+        widgetLayout.addWidget(task_label_state, 1, 1, 1, 1)
+        widgetLayout.addWidget(task_state, 1, 2, 1, 1)
+        widgetLayout.addWidget(task_label_deadline, 0, 3, 2, 1)
+        widgetLayout.addWidget(task_deadline, 0, 4, 2, 1)
+        widgetLayout.addWidget(task_button, 0, 5, 2, 1)
+
+        self.task_widget.setLayout(widgetLayout)
+        self.task_widget.setFixedHeight(50)
+        self.task_widget.setObjectName("task")
+
+        return self.task_widget
 
     @staticmethod
     def css_loader(filename):
