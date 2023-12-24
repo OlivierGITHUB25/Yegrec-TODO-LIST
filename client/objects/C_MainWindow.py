@@ -209,11 +209,21 @@ class MainWindow(QtWidgets.QWidget):
         task_deadline = QtWidgets.QLabel("20/15/2003")
         task_deadline.setAlignment(QtCore.Qt.AlignVCenter)
 
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("../client/assets/settings.svg"))
+        icon.addPixmap(QtGui.QPixmap("../client/assets/more.svg"))
         task_button = QtWidgets.QPushButton()
         task_button.setIcon(icon)
         task_button.setIconSize(QtCore.QSize(24, 24))
+        task_button.setSizePolicy(sizePolicy)
+
+        icon2 = QtGui.QIcon()
+        icon2.addPixmap(QtGui.QPixmap("../client/assets/settings.svg"))
+        task_button2 = QtWidgets.QPushButton()
+        task_button2.setIcon(icon2)
+        task_button2.setIconSize(QtCore.QSize(24, 24))
+        task_button2.setSizePolicy(sizePolicy)
 
         widgetLayout.addWidget(task_label, 0, 0, 2, 1)
         widgetLayout.addWidget(task_label_priority, 0, 1, 1, 1)
@@ -223,6 +233,7 @@ class MainWindow(QtWidgets.QWidget):
         widgetLayout.addWidget(task_label_deadline, 0, 3, 2, 1)
         widgetLayout.addWidget(task_deadline, 0, 4, 2, 1)
         widgetLayout.addWidget(task_button, 0, 5, 2, 1)
+        widgetLayout.addWidget(task_button2, 0, 6, 2, 1)
 
         self.task_widget.setLayout(widgetLayout)
         self.task_widget.setFixedHeight(50)
