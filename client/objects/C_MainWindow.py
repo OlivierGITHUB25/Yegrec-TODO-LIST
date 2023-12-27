@@ -2,7 +2,7 @@ import ssl
 import sys
 from PyQt5 import QtWidgets, QtGui, QtCore
 
-from .C_Infobox import InfoBox
+from .C_Infobox import InfoBox, CreateTask, CreateLabel, TaskDetails
 
 
 class MainWindow(QtWidgets.QWidget):
@@ -10,20 +10,17 @@ class MainWindow(QtWidgets.QWidget):
         super().__init__()
         self.TCP_Session = tcp_session
         self.setWindowTitle("YeGrec's View")
-        self.setGeometry(100, 100, 800, 400)
+        self.setGeometry(100, 100, 1000, 700)
+        self.setWindowTitle("YeGrec's Todo List")
+        self.setStyleSheet(self.css_loader('../client/styles/styles.css'))
         self.grid = QtWidgets.QGridLayout()
         self.setLayout(self.grid)
         self.verticalLayout = QtWidgets.QVBoxLayout()
         self.grid.addLayout(self.verticalLayout, 0, 0)
-        self.tasks = self.get_task()
-        print(self.tasks)
+        self.tasks = self.api_get_tasks()
         self.init_ui()
 
     def init_ui(self):
-        self.setWindowTitle("YeGrec's Todo List")
-        self.setGeometry(100, 100, 1000, 700)
-        self.setStyleSheet(self.css_loader('../client/styles/styles.css'))
-
         # Icons definition
 
         icon1 = QtGui.QIcon()
@@ -48,8 +45,10 @@ class MainWindow(QtWidgets.QWidget):
         self.menuFile = QtWidgets.QMenu("File")
         self.actionCreateTask = QtWidgets.QAction("Create task")
         self.actionCreateTask.setIcon(icon1)
+        self.actionCreateTask.triggered.connect(self.create_task_dialog)
         self.actionCreateLabel = QtWidgets.QAction("Create label")
         self.actionCreateLabel.setIcon(icon2)
+        self.actionCreateLabel.triggered.connect(self.create_label_dialog)
         self.actionEditObject = QtWidgets.QAction("Edit object")
         self.actionEditObject.setIcon(icon3)
         self.actionDeleteObject = QtWidgets.QAction("Delete object")
@@ -84,10 +83,12 @@ class MainWindow(QtWidgets.QWidget):
         self.pushButton = QtWidgets.QPushButton()
         self.pushButton.setIcon(icon1)
         self.pushButton.setIconSize(QtCore.QSize(32, 32))
+        self.pushButton.clicked.connect(self.create_task_dialog)
 
         self.pushButton_2 = QtWidgets.QPushButton()
         self.pushButton_2.setIcon(icon2)
         self.pushButton_2.setIconSize(QtCore.QSize(32, 32))
+        self.pushButton_2.clicked.connect(self.create_label_dialog)
 
         self.pushButton_3 = QtWidgets.QPushButton()
         self.pushButton_3.setIcon(icon3)
@@ -119,8 +120,8 @@ class MainWindow(QtWidgets.QWidget):
         self.layout = QtWidgets.QVBoxLayout(content_widget)
         self.layout.setAlignment(QtCore.Qt.AlignTop)
 
-        for i in range(0, 50):
-            self.layout.addWidget(self.add_tasks_to_scroll_area())
+        for task in self.tasks:
+            self.layout.addWidget(self.add_tasks_to_scroll_area(task["task_id"], task["name"], str(task["state"]), str(task["priority"]), task["date"], task["description"]))
 
         # Third line (horizontal layout)
 
@@ -161,6 +162,79 @@ class MainWindow(QtWidgets.QWidget):
         self.verticalLayout.addWidget(self.scrollArea)
         self.verticalLayout.addLayout(self.horizontalLayout_2)
 
+    def add_tasks_to_scroll_area(self, task_id, name, state, priority, date, description):
+        self.task_widget = QtWidgets.QWidget()
+        self.task_widget.setFixedHeight(50)
+        widgetLayout = QtWidgets.QGridLayout()
+
+        task_label = QtWidgets.QLabel(name)
+
+        task_label_state = QtWidgets.QLabel("State:")
+        task_label_state.setAlignment(QtCore.Qt.AlignRight)
+        task_state = QtWidgets.QLabel(state)
+
+        task_label_priority = QtWidgets.QLabel("Priority:")
+        task_label_priority.setAlignment(QtCore.Qt.AlignRight)
+        task_priority = QtWidgets.QLabel(priority)
+
+        task_label_deadline = QtWidgets.QLabel("Deadline:")
+        task_label_deadline.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight)
+        task_deadline = QtWidgets.QLabel(date)
+        task_deadline.setAlignment(QtCore.Qt.AlignVCenter)
+
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap("../client/assets/more.svg"))
+        task_button = QtWidgets.QPushButton()
+        task_button.setIcon(icon)
+        task_button.setIconSize(QtCore.QSize(24, 24))
+        task_button.setSizePolicy(sizePolicy)
+        task_button.clicked.connect(lambda: self.show_task_details(task_id, name, state, priority, date, description))
+
+        icon2 = QtGui.QIcon()
+        icon2.addPixmap(QtGui.QPixmap("../client/assets/edit.svg"))
+        task_button2 = QtWidgets.QPushButton()
+        task_button2.setIcon(icon2)
+        task_button2.setIconSize(QtCore.QSize(24, 24))
+        task_button2.setSizePolicy(sizePolicy)
+
+        widgetLayout.addWidget(task_label, 0, 0, 2, 1)
+        widgetLayout.addWidget(task_label_priority, 0, 1, 1, 1)
+        widgetLayout.addWidget(task_priority, 0, 2, 1, 1)
+        widgetLayout.addWidget(task_label_state, 1, 1, 1, 1)
+        widgetLayout.addWidget(task_state, 1, 2, 1, 1)
+        widgetLayout.addWidget(task_label_deadline, 0, 3, 2, 1)
+        widgetLayout.addWidget(task_deadline, 0, 4, 2, 1)
+        widgetLayout.addWidget(task_button, 0, 5, 2, 1)
+        widgetLayout.addWidget(task_button2, 0, 6, 2, 1)
+
+        self.task_widget.setLayout(widgetLayout)
+        self.task_widget.setFixedHeight(50)
+        self.task_widget.setObjectName("task")
+
+        return self.task_widget
+
+    def show_task_details(self, task_id, name, state, priority, date, description):
+        self.dialog = TaskDetails(task_id, name, state, priority, date, description, self.TCP_Session)
+        self.dialog.show()
+
+    def create_task_dialog(self):
+        dialog = CreateTask()
+        result = dialog.exec_()
+
+        if result == QtWidgets.QDialog.Accepted:
+            print("Champ 1:", dialog.edit1.text())
+            print("Champ 2:", dialog.edit2.text())
+
+    def create_label_dialog(self):
+        dialog = CreateLabel()
+        result = dialog.exec_()
+
+        if result == QtWidgets.QDialog.Accepted:
+            print("Champ 1:", dialog.edit1.text())
+            print("Champ 2:", dialog.edit2.text())
+
     def closeEvent(self, event, **kwargs):
         reply = QtWidgets.QMessageBox.question(self, 'Quit', 'Are you sure you want to quit YeGrec ?',
                                                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
@@ -183,63 +257,11 @@ class MainWindow(QtWidgets.QWidget):
             if type(event) is not bool:
                 event.ignore()
 
-    def get_task(self):
+    def api_get_tasks(self):
         self.TCP_Session.send_data({
             "client": "get_tasks",
         })
         return self.TCP_Session.get_data()["content"]
-
-    def add_tasks_to_scroll_area(self):
-        self.task_widget = QtWidgets.QWidget()
-        self.task_widget.setFixedHeight(50)
-        widgetLayout = QtWidgets.QGridLayout()
-
-        task_label = QtWidgets.QLabel("Task 1")
-
-        task_label_state = QtWidgets.QLabel("State:")
-        task_label_state.setAlignment(QtCore.Qt.AlignRight)
-        task_state = QtWidgets.QLabel("HIGH")
-
-        task_label_priority = QtWidgets.QLabel("Priority:")
-        task_label_priority.setAlignment(QtCore.Qt.AlignRight)
-        task_priority = QtWidgets.QLabel("FINISHED")
-
-        task_label_deadline = QtWidgets.QLabel("Deadline:")
-        task_label_deadline.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight)
-        task_deadline = QtWidgets.QLabel("20/15/2003")
-        task_deadline.setAlignment(QtCore.Qt.AlignVCenter)
-
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-
-        icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("../client/assets/more.svg"))
-        task_button = QtWidgets.QPushButton()
-        task_button.setIcon(icon)
-        task_button.setIconSize(QtCore.QSize(24, 24))
-        task_button.setSizePolicy(sizePolicy)
-
-        icon2 = QtGui.QIcon()
-        icon2.addPixmap(QtGui.QPixmap("../client/assets/settings.svg"))
-        task_button2 = QtWidgets.QPushButton()
-        task_button2.setIcon(icon2)
-        task_button2.setIconSize(QtCore.QSize(24, 24))
-        task_button2.setSizePolicy(sizePolicy)
-
-        widgetLayout.addWidget(task_label, 0, 0, 2, 1)
-        widgetLayout.addWidget(task_label_priority, 0, 1, 1, 1)
-        widgetLayout.addWidget(task_priority, 0, 2, 1, 1)
-        widgetLayout.addWidget(task_label_state, 1, 1, 1, 1)
-        widgetLayout.addWidget(task_state, 1, 2, 1, 1)
-        widgetLayout.addWidget(task_label_deadline, 0, 3, 2, 1)
-        widgetLayout.addWidget(task_deadline, 0, 4, 2, 1)
-        widgetLayout.addWidget(task_button, 0, 5, 2, 1)
-        widgetLayout.addWidget(task_button2, 0, 6, 2, 1)
-
-        self.task_widget.setLayout(widgetLayout)
-        self.task_widget.setFixedHeight(50)
-        self.task_widget.setObjectName("task")
-
-        return self.task_widget
 
     @staticmethod
     def css_loader(filename):

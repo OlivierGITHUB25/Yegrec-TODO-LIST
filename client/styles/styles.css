@@ -8,8 +8,13 @@ QPushButton:hover {
     background-color: #d9d9d9;
 }
 
-QLineEdit {
+QLineEdit, QComboBox, QDateEdit{
     padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+QPlainTextEdit{
     border: 1px solid #ccc;
     border-radius: 4px;
 }
@@ -20,4 +25,16 @@ QLabel {
 
 #task {
     border: 1px solid #999999;
+}
+
+.title {
+    font-family: 'Arial';
+    font-size: 14px;
+    font-weight: bold;
+    margin-top: 20px;
+    margin-bottom: 5px;
+}
+
+.content {
+    margin-left: 10px;
 }
