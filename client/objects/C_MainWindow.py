@@ -2,25 +2,26 @@ import ssl
 import sys
 from PyQt5 import QtWidgets, QtGui, QtCore
 
-from .C_Widgets import InfoBox, CreateTask, CreateLabel, TaskDetails
+from .C_Widgets import InfoBox, Question, CreateTask, CreateLabel, TaskDetails
 
 
 class MainWindow(QtWidgets.QWidget):
     def __init__(self, tcp_session):
         super().__init__()
         self.TCP_Session = tcp_session
+        self.general_layout_grid = QtWidgets.QGridLayout()
+        self.setLayout(self.general_layout_grid)
+        self.verticalLayout = QtWidgets.QVBoxLayout()
+        self.general_layout_grid.addLayout(self.verticalLayout, 0, 0)
+        self.tasks = self.get_tasks()
+        self.init_ui()
+
+    def init_ui(self):
         self.setWindowTitle("YeGrec's View")
         self.setGeometry(100, 100, 1000, 700)
         self.setWindowTitle("YeGrec's Todo List")
         self.setStyleSheet(self.css_loader('../client/styles/styles.css'))
-        self.grid = QtWidgets.QGridLayout()
-        self.setLayout(self.grid)
-        self.verticalLayout = QtWidgets.QVBoxLayout()
-        self.grid.addLayout(self.verticalLayout, 0, 0)
-        self.tasks = self.api_get_tasks()
-        self.init_ui()
 
-    def init_ui(self):
         # Icons definition
 
         icon1 = QtGui.QIcon()
@@ -42,130 +43,184 @@ class MainWindow(QtWidgets.QWidget):
 
         self.menubar = QtWidgets.QMenuBar()
 
-        self.menuFile = QtWidgets.QMenu("File")
-        self.actionCreateTask = QtWidgets.QAction("Create task")
-        self.actionCreateTask.setIcon(icon1)
-        self.actionCreateTask.triggered.connect(self.create_task_dialog)
-        self.actionCreateLabel = QtWidgets.QAction("Create label")
-        self.actionCreateLabel.setIcon(icon2)
-        self.actionCreateLabel.triggered.connect(self.create_label_dialog)
-        self.actionEditObject = QtWidgets.QAction("Edit object")
-        self.actionEditObject.setIcon(icon3)
-        self.actionDeleteObject = QtWidgets.QAction("Delete object")
-        self.actionDeleteObject.setIcon(icon4)
-        self.actionListUsers = QtWidgets.QAction("List users")
-        self.actionListUsers.setIcon(icon5)
-        self.actionQuit = QtWidgets.QAction("Quit")
-        self.actionQuit.setIcon(icon6)
-        self.actionQuit.triggered.connect(self.closeEvent)
+        self.menu_file = QtWidgets.QMenu("File")
+        self._action_create_task = QtWidgets.QAction("Create task")
+        self._action_create_task.setIcon(icon1)
+        self._action_create_task.triggered.connect(self.action_create_task)
+        self._action_create_label = QtWidgets.QAction("Create label")
+        self._action_create_label.setIcon(icon2)
+        self._action_create_label.triggered.connect(self.action_create_label)
+        self._action_edit_object = QtWidgets.QAction("Edit object")
+        self._action_edit_object.setIcon(icon3)
+        self._action_delete_object = QtWidgets.QAction("Delete object")
+        self._action_delete_object.setIcon(icon4)
+        self._action_list_users = QtWidgets.QAction("List users")
+        self._action_list_users.setIcon(icon5)
+        self._action_quit = QtWidgets.QAction("Quit")
+        self._action_quit.setIcon(icon6)
+        self._action_quit.triggered.connect(self.closeEvent)
 
-        self.menuAbout = QtWidgets.QMenu("About")
+        self.menu_about = QtWidgets.QMenu("About")
 
-        self.menubar.addMenu(self.menuFile)
-        self.menuFile.addAction(self.actionCreateTask)
-        self.menuFile.addAction(self.actionCreateLabel)
-        self.menuFile.addSeparator()
-        self.menuFile.addAction(self.actionEditObject)
-        self.menuFile.addAction(self.actionDeleteObject)
-        self.menuFile.addSeparator()
-        self.menuFile.addAction(self.actionListUsers)
-        self.menuFile.addSeparator()
-        self.menuFile.addAction(self.actionQuit)
+        self.menubar.addMenu(self.menu_file)
+        self.menu_file.addAction(self._action_create_task)
+        self.menu_file.addAction(self._action_create_label)
+        self.menu_file.addSeparator()
+        self.menu_file.addAction(self._action_edit_object)
+        self.menu_file.addAction(self._action_delete_object)
+        self.menu_file.addSeparator()
+        self.menu_file.addAction(self._action_list_users)
+        self.menu_file.addSeparator()
+        self.menu_file.addAction(self._action_quit)
 
-        self.menubar.addMenu(self.menuAbout)
+        self.menubar.addMenu(self.menu_about)
 
-        self.grid.setMenuBar(self.menubar)
+        self.general_layout_grid.setMenuBar(self.menubar)
 
         # First line (horizontal layout)
 
-        self.horizontalLayout = QtWidgets.QHBoxLayout()
+        horizontal_layout = QtWidgets.QHBoxLayout()
 
-        self.pushButton = QtWidgets.QPushButton()
-        self.pushButton.setIcon(icon1)
-        self.pushButton.setIconSize(QtCore.QSize(32, 32))
-        self.pushButton.clicked.connect(self.create_task_dialog)
+        create_task_button = QtWidgets.QPushButton()
+        create_task_button.setIcon(icon1)
+        create_task_button.setIconSize(QtCore.QSize(32, 32))
+        create_task_button.clicked.connect(self.action_create_task)
 
-        self.pushButton_2 = QtWidgets.QPushButton()
-        self.pushButton_2.setIcon(icon2)
-        self.pushButton_2.setIconSize(QtCore.QSize(32, 32))
-        self.pushButton_2.clicked.connect(self.create_label_dialog)
+        create_label_button = QtWidgets.QPushButton()
+        create_label_button.setIcon(icon2)
+        create_label_button.setIconSize(QtCore.QSize(32, 32))
+        create_label_button.clicked.connect(self.action_create_label)
 
-        self.pushButton_3 = QtWidgets.QPushButton()
-        self.pushButton_3.setIcon(icon3)
-        self.pushButton_3.setIconSize(QtCore.QSize(32, 32))
+        edit_task_button = QtWidgets.QPushButton()
+        edit_task_button.setIcon(icon3)
+        edit_task_button.setIconSize(QtCore.QSize(32, 32))
 
-        self.pushButton_4 = QtWidgets.QPushButton()
-        self.pushButton_4.setIcon(icon4)
-        self.pushButton_4.setIconSize(QtCore.QSize(32, 32))
+        delete_task_button = QtWidgets.QPushButton()
+        delete_task_button.setIcon(icon4)
+        delete_task_button.setIconSize(QtCore.QSize(32, 32))
 
-        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        spacer_item = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
 
-        self.pushButton_5 = QtWidgets.QPushButton()
-        self.pushButton_5.setIcon(icon5)
-        self.pushButton_5.setIconSize(QtCore.QSize(32, 32))
+        list_user_button = QtWidgets.QPushButton()
+        list_user_button.setIcon(icon5)
+        list_user_button.setIconSize(QtCore.QSize(32, 32))
 
-        self.pushButton_6 = QtWidgets.QPushButton()
-        self.pushButton_6.setIcon(icon6)
-        self.pushButton_6.setIconSize(QtCore.QSize(32, 32))
-        self.pushButton_6.clicked.connect(self.closeEvent)
+        quit_button = QtWidgets.QPushButton()
+        quit_button.setIcon(icon6)
+        quit_button.setIconSize(QtCore.QSize(32, 32))
+        quit_button.clicked.connect(self.closeEvent)
 
         # Second line (scroll area)
 
-        self.scrollArea = QtWidgets.QScrollArea()
-        self.scrollArea.setWidgetResizable(True)
+        scroll_area = QtWidgets.QScrollArea()
+        scroll_area.setWidgetResizable(True)
 
-        content_widget = QtWidgets.QWidget(self.scrollArea)
-        self.scrollArea.setWidget(content_widget)
+        content_widget = QtWidgets.QWidget(scroll_area)
+        scroll_area.setWidget(content_widget)
 
         self.task_view_layout = QtWidgets.QVBoxLayout(content_widget)
         self.task_view_layout.setAlignment(QtCore.Qt.AlignTop)
 
         for task in self.tasks:
-            self.task_view_layout.addWidget(self.add_tasks_to_scroll_area(task["task_id"], task["name"], str(task["state"]), str(task["priority"]), task["date"], task["description"]))
+            self.task_view_layout.addWidget(self.add_tasks_to_scroll_area(
+                task["task_id"],
+                task["name"],
+                str(task["state"]),
+                str(task["priority"]),
+                task["date"],
+                task["description"])
+            )
 
         # Third line (horizontal layout)
 
-        self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
+        horizontal_layout_2 = QtWidgets.QHBoxLayout()
 
-        self.pushButton_7 = QtWidgets.QPushButton()
-        self.pushButton_7.setIcon(icon7)
-        self.pushButton_7.setIconSize(QtCore.QSize(12, 12))
+        sort_button = QtWidgets.QPushButton()
+        sort_button.setIcon(icon7)
+        sort_button.setIconSize(QtCore.QSize(12, 12))
 
-        self.label = QtWidgets.QLabel("Sort by:")
-        self.label.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignVCenter)
+        sort_label = QtWidgets.QLabel("Sort by:")
+        sort_label.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignVCenter)
 
-        self.label_2 = QtWidgets.QLabel("Date")
-        self.label_2.setAlignment(QtCore.Qt.AlignLeading | QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        date_label = QtWidgets.QLabel("Date")
+        date_label.setAlignment(QtCore.Qt.AlignLeading | QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
 
-        spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        spacer_item_2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
 
-        self.label_3 = QtWidgets.QLabel("YeGrec's list")
-        self.label_3.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignVCenter)
+        annotation_label = QtWidgets.QLabel("YeGrec's list")
+        annotation_label.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignVCenter)
 
         # Layout definition
 
-        self.horizontalLayout.addWidget(self.pushButton)
-        self.horizontalLayout.addWidget(self.pushButton_2)
-        self.horizontalLayout.addWidget(self.pushButton_3)
-        self.horizontalLayout.addWidget(self.pushButton_4)
-        self.horizontalLayout.addItem(spacerItem)
-        self.horizontalLayout.addWidget(self.pushButton_5)
-        self.horizontalLayout.addWidget(self.pushButton_6)
+        horizontal_layout.addWidget(create_task_button)
+        horizontal_layout.addWidget(create_label_button)
+        horizontal_layout.addWidget(edit_task_button)
+        horizontal_layout.addWidget(delete_task_button)
+        horizontal_layout.addItem(spacer_item)
+        horizontal_layout.addWidget(list_user_button)
+        horizontal_layout.addWidget(quit_button)
 
-        self.horizontalLayout_2.addWidget(self.pushButton_7)
-        self.horizontalLayout_2.addWidget(self.label)
-        self.horizontalLayout_2.addWidget(self.label_2)
-        self.horizontalLayout_2.addItem(spacerItem1)
-        self.horizontalLayout_2.addWidget(self.label_3)
+        horizontal_layout_2.addWidget(sort_button)
+        horizontal_layout_2.addWidget(sort_label)
+        horizontal_layout_2.addWidget(date_label)
+        horizontal_layout_2.addItem(spacer_item_2)
+        horizontal_layout_2.addWidget(annotation_label)
 
-        self.verticalLayout.addLayout(self.horizontalLayout)
-        self.verticalLayout.addWidget(self.scrollArea)
-        self.verticalLayout.addLayout(self.horizontalLayout_2)
+        self.verticalLayout.addLayout(horizontal_layout)
+        self.verticalLayout.addWidget(scroll_area)
+        self.verticalLayout.addLayout(horizontal_layout_2)
+
+    def action_task_details(self, task_id, name, state, priority, date, description):
+        self.dialog = TaskDetails(task_id, name, state, priority, date, description, self.TCP_Session)
+        self.dialog.show()
+
+    def action_create_task(self):
+        dialog = CreateTask(self.TCP_Session)
+        result = dialog.exec_()
+
+        if result == QtWidgets.QDialog.Accepted:
+            self.reload_tasks()
+
+    def action_create_label(self):
+        dialog = CreateLabel(self.TCP_Session)
+        dialog.exec_()
+
+    def get_tasks(self):
+        try:
+            self.TCP_Session.send_data({
+                "client": "get_tasks",
+            })
+            result = self.TCP_Session.get_data()["content"]
+        except KeyError:
+            return []
+        except ssl.SSLEOFError:
+            InfoBox("Connection lost", QtWidgets.QMessageBox.Icon.Critical)
+            sys.exit()
+        else:
+            return result
+
+    def reload_tasks(self):
+        self.tasks = self.get_tasks()
+        while self.task_view_layout.count():
+            item = self.task_view_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+
+        for task in self.tasks:
+            self.task_view_layout.addWidget(self.add_tasks_to_scroll_area(
+                task["task_id"],
+                task["name"],
+                str(task["state"]),
+                str(task["priority"]),
+                task["date"],
+                task["description"])
+            )
 
     def add_tasks_to_scroll_area(self, task_id, name, state, priority, date, description):
-        self.task_widget = QtWidgets.QWidget()
-        self.task_widget.setFixedHeight(50)
-        widgetLayout = QtWidgets.QGridLayout()
+        task_widget = QtWidgets.QWidget()
+        task_widget.setFixedHeight(50)
+        task_widget_layout = QtWidgets.QGridLayout()
 
         task_label = QtWidgets.QLabel(name)
 
@@ -184,60 +239,46 @@ class MainWindow(QtWidgets.QWidget):
         task_deadline = QtWidgets.QLabel(date)
         task_deadline.setAlignment(QtCore.Qt.AlignVCenter)
 
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
 
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap("../client/assets/more.svg"))
-        task_button = QtWidgets.QPushButton()
-        task_button.setIcon(icon)
-        task_button.setIconSize(QtCore.QSize(24, 24))
-        task_button.setSizePolicy(sizePolicy)
-        task_button.clicked.connect(lambda: self.show_task_details_dialog(task_id, name, state, priority, date, description))
+        task_details_button = QtWidgets.QPushButton()
+        task_details_button.setIcon(icon)
+        task_details_button.setIconSize(QtCore.QSize(24, 24))
+        task_details_button.setSizePolicy(size_policy)
+        task_details_button.clicked.connect(
+            lambda: self.action_task_details(task_id, name, state, priority, date, description)
+        )
 
         icon2 = QtGui.QIcon()
         icon2.addPixmap(QtGui.QPixmap("../client/assets/edit.svg"))
-        task_button2 = QtWidgets.QPushButton()
-        task_button2.setIcon(icon2)
-        task_button2.setIconSize(QtCore.QSize(24, 24))
-        task_button2.setSizePolicy(sizePolicy)
+        task_edit_button = QtWidgets.QPushButton()
+        task_edit_button.setIcon(icon2)
+        task_edit_button.setIconSize(QtCore.QSize(24, 24))
+        task_edit_button.setSizePolicy(size_policy)
 
-        widgetLayout.addWidget(task_label, 0, 0, 2, 1)
-        widgetLayout.addWidget(task_label_priority, 0, 1, 1, 1)
-        widgetLayout.addWidget(task_priority, 0, 2, 1, 1)
-        widgetLayout.addWidget(task_label_state, 1, 1, 1, 1)
-        widgetLayout.addWidget(task_state, 1, 2, 1, 1)
-        widgetLayout.addWidget(task_label_deadline, 0, 3, 2, 1)
-        widgetLayout.addWidget(task_deadline, 0, 4, 2, 1)
-        widgetLayout.addWidget(task_button, 0, 5, 2, 1)
-        widgetLayout.addWidget(task_button2, 0, 6, 2, 1)
+        task_widget_layout.addWidget(task_label, 0, 0, 2, 1)
+        task_widget_layout.addWidget(task_label_priority, 0, 1, 1, 1)
+        task_widget_layout.addWidget(task_priority, 0, 2, 1, 1)
+        task_widget_layout.addWidget(task_label_state, 1, 1, 1, 1)
+        task_widget_layout.addWidget(task_state, 1, 2, 1, 1)
+        task_widget_layout.addWidget(task_label_deadline, 0, 3, 2, 1)
+        task_widget_layout.addWidget(task_deadline, 0, 4, 2, 1)
+        task_widget_layout.addWidget(task_details_button, 0, 5, 2, 1)
+        task_widget_layout.addWidget(task_edit_button, 0, 6, 2, 1)
 
-        self.task_widget.setLayout(widgetLayout)
-        self.task_widget.setFixedHeight(50)
-        self.task_widget.setObjectName("task")
+        task_widget.setLayout(task_widget_layout)
+        task_widget.setFixedHeight(50)
+        task_widget.setObjectName("task")
 
-        return self.task_widget
-
-    def show_task_details_dialog(self, task_id, name, state, priority, date, description):
-        self.dialog = TaskDetails(task_id, name, state, priority, date, description, self.TCP_Session)
-        self.dialog.show()
-
-    def create_task_dialog(self):
-        dialog = CreateTask(self.TCP_Session)
-        result = dialog.exec_()
-
-        if result == QtWidgets.QDialog.Accepted:
-            self.reload_tasks()
-
-    def create_label_dialog(self):
-        dialog = CreateLabel()
-        result = dialog.exec_()
+        return task_widget
 
     def closeEvent(self, event, **kwargs):
-        reply = QtWidgets.QMessageBox.question(self, 'Quit', 'Are you sure you want to quit YeGrec ?',
-                                               QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-                                               QtWidgets.QMessageBox.No)
+        question = Question("Quit", "Are you sure you want to quit YeGrec ?")
+        question = question.exec_()
 
-        if reply == QtWidgets.QMessageBox.Yes:
+        if question == QtWidgets.QMessageBox.Yes:
             try:
                 self.TCP_Session.send_data({
                     "client": "DISCONNECT",
@@ -253,28 +294,6 @@ class MainWindow(QtWidgets.QWidget):
         else:
             if type(event) is not bool:
                 event.ignore()
-
-    def api_get_tasks(self):
-        self.TCP_Session.send_data({
-            "client": "get_tasks",
-        })
-        try:
-            result = self.TCP_Session.get_data()["content"]
-        except KeyError:
-            return []
-        else:
-            return result
-
-    def reload_tasks(self):
-        self.tasks = self.api_get_tasks()
-        while self.task_view_layout.count():
-            item = self.task_view_layout.takeAt(0)
-            widget = item.widget()
-            if widget:
-                widget.deleteLater()
-
-        for task in self.tasks:
-            self.task_view_layout.addWidget(self.add_tasks_to_scroll_area(task["task_id"], task["name"], str(task["state"]), str(task["priority"]), task["date"], task["description"]))
 
     @staticmethod
     def css_loader(filename):

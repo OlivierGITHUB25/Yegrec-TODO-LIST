@@ -1,5 +1,6 @@
 import ssl
 import sys
+import socket
 from PyQt5 import QtWidgets
 
 from objects.C_TCP_Session import TCPSession
@@ -16,8 +17,22 @@ class LoginWindow(QtWidgets.QWidget):
         self.setStyleSheet(self.css_loader('../client/styles/styles.css'))
         self.grid = QtWidgets.QGridLayout()
         self.setLayout(self.grid)
-        self.show_login()
-        self.connect()
+        self.init_connect()
+
+    def init_connect(self):
+        try:
+            with open("server_address", "r") as file:
+                for line in file:
+                    address, port = line.split(":")
+            self.TCP_Session = TCPSession(address, port)
+        except ConnectionRefusedError:
+            InfoBox("Connection error", QtWidgets.QMessageBox.Icon.Critical)
+            sys.exit()
+        except (UnboundLocalError, socket.gaierror):
+            InfoBox("Wrong server address", QtWidgets.QMessageBox.Icon.Critical)
+            sys.exit()
+        else:
+            self.show_login()
 
     def show_login(self):
         username_label = QtWidgets.QLabel("Username")
@@ -40,12 +55,12 @@ class LoginWindow(QtWidgets.QWidget):
         self.grid.addWidget(sign_up_button, 5, 3, 1, 2)
         self.grid.addWidget(quit_button, 6, 1, 1, 4)
 
-        login_button.clicked.connect(self.login_action)
-        quit_button.clicked.connect(self.quit_action)
+        login_button.clicked.connect(self.action_login)
+        quit_button.clicked.connect(self.action_quit)
         sign_up_button.clicked.connect(self.show_sign_up)
 
     def show_sign_up(self):
-        self.clear()
+        self.clear_widget()
 
         username_label = QtWidgets.QLabel("Username")
         password_label = QtWidgets.QLabel("Password")
@@ -69,19 +84,22 @@ class LoginWindow(QtWidgets.QWidget):
         self.grid.addWidget(sign_up_button, 7, 1)
         self.grid.addWidget(cancel_button, 8, 1)
 
-        cancel_button.clicked.connect(self.cancel_action)
-        sign_up_button.clicked.connect(self.sign_up_action)
+        cancel_button.clicked.connect(self.action_cancel)
+        sign_up_button.clicked.connect(self.action_sign_up)
 
     def show_main_window(self):
         self.main_window = MainWindow(self.TCP_Session)
         self.main_window.show()
 
-    def login_action(self):
+    def action_login(self):
+        if self.username_input.text() == "" or self.password_input.text() == "":
+            return InfoBox("Username or password is blank", QtWidgets.QMessageBox.Icon.Warning)
+
         try:
             self.TCP_Session.send_data({
-                        "client": "login",
-                        "username": self.username_input.text(),
-                        "password": self.password_input.text(),
+                "client": "login",
+                "username": self.username_input.text(),
+                "password": self.password_input.text(),
             })
             response = self.TCP_Session.get_data()
             print(response)
@@ -94,23 +112,24 @@ class LoginWindow(QtWidgets.QWidget):
                 InfoBox("Login error", QtWidgets.QMessageBox.Icon.Warning)
             elif response["error"] == "InvalidJSONFormat":
                 InfoBox("Client send an incorrect request", QtWidgets.QMessageBox.Icon.Critical)
-                self.quit_action()
             elif response["error"] == "InternalError":
                 InfoBox("Internal error from server", QtWidgets.QMessageBox.Icon.Critical)
-                self.quit_action()
+            self.action_quit()
         elif response["success"] == "yes":
             self.hide()
             self.show_main_window()
 
-    def sign_up_action(self):
-        if self.password_input.text() != self.password_input_repeat.text():
+    def action_sign_up(self):
+        if self.username_input.text() == "" or self.password_input.text() == "" or self.password_input_repeat.text() == "":
+            return InfoBox("Username or password is blank", QtWidgets.QMessageBox.Icon.Warning)
+        elif self.password_input.text() != self.password_input_repeat.text():
             return InfoBox("Passwords don't match", QtWidgets.QMessageBox.Icon.Warning)
 
         try:
             self.TCP_Session.send_data({
-                        "client": "sign_up",
-                        "username": self.username_input.text(),
-                        "password": self.password_input.text(),
+                "client": "sign_up",
+                "username": self.username_input.text(),
+                "password": self.password_input.text(),
             })
             response = self.TCP_Session.get_data()
             print(response)
@@ -129,14 +148,15 @@ class LoginWindow(QtWidgets.QWidget):
                 InfoBox("Account already exist", QtWidgets.QMessageBox.Icon.Warning)
             elif response["error"] == "InvalidJSONFormat":
                 InfoBox("Client send an incorrect request", QtWidgets.QMessageBox.Icon.Critical)
-                self.quit_action()
+                self.action_quit()
             elif response["error"] == "InternalError":
                 InfoBox("Internal error from server", QtWidgets.QMessageBox.Icon.Critical)
-                self.quit_action()
+                self.action_quit()
         elif response["success"] == "yes":
             InfoBox("Account created", QtWidgets.QMessageBox.Icon.Information)
+            self.action_cancel()
 
-    def quit_action(self):
+    def action_quit(self):
         try:
             self.TCP_Session.send_data({
                 "client": "DISCONNECT",
@@ -147,22 +167,15 @@ class LoginWindow(QtWidgets.QWidget):
         finally:
             sys.exit()
 
-    def cancel_action(self):
-        self.clear()
+    def action_cancel(self):
+        self.clear_widget()
         self.show_login()
 
-    def connect(self):
-        try:
-            self.TCP_Session = TCPSession("127.0.0.1", 5000)
-        except ConnectionRefusedError:
-            InfoBox("Connection error", QtWidgets.QMessageBox.Icon.Critical)
-            sys.exit()
-
-    def clear(self):
+    def clear_widget(self):
         for i in reversed(range(self.layout().count())):
             self.layout().itemAt(i).widget().setParent(None)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event, **kwargs):
         try:
             self.TCP_Session.send_data({
                 "client": "DISCONNECT",

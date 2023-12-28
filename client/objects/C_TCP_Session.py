@@ -9,10 +9,11 @@ class TCPSession:
         self.__address = (hostname, port)
         self.__context = ssl.create_default_context()
         self.__context.load_verify_locations("./cert/CA.crt")
-        self.__data = None
         self.__connected = False
-        self.__error = None
         self.__init_connection()
+
+        self.__data = None
+        self.__error = None
 
     def init_connection(self):
         connection = threading.Thread(target=self.__init_connection)
