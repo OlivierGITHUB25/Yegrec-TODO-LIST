@@ -40,6 +40,8 @@ class MainWindow(QtWidgets.QWidget):
         icon6.addPixmap(QtGui.QPixmap("../client/assets/disconnect.svg"))
         icon7 = QtGui.QIcon()
         icon7.addPixmap(QtGui.QPixmap("../client/assets/sort.svg"))
+        icon8 = QtGui.QIcon()
+        icon8.addPixmap(QtGui.QPixmap("../client/assets/help.svg"))
 
         # Menu bar
 
@@ -109,6 +111,10 @@ class MainWindow(QtWidgets.QWidget):
         list_user_button.setIconSize(QtCore.QSize(32, 32))
         list_user_button.clicked.connect(self.action_list_users)
 
+        help_button = QtWidgets.QPushButton()
+        help_button.setIcon(icon8)
+        help_button.setIconSize(QtCore.QSize(32, 32))
+
         quit_button = QtWidgets.QPushButton()
         quit_button.setIcon(icon6)
         quit_button.setIconSize(QtCore.QSize(32, 32))
@@ -161,6 +167,7 @@ class MainWindow(QtWidgets.QWidget):
         horizontal_layout.addWidget(edit_task_button)
         horizontal_layout.addWidget(delete_task_button)
         horizontal_layout.addItem(spacer_item)
+        horizontal_layout.addWidget(help_button)
         horizontal_layout.addWidget(list_user_button)
         horizontal_layout.addWidget(quit_button)
 
@@ -266,6 +273,13 @@ class MainWindow(QtWidgets.QWidget):
         task_edit_button.setIconSize(QtCore.QSize(24, 24))
         task_edit_button.setSizePolicy(size_policy)
 
+        icon2 = QtGui.QIcon()
+        icon2.addPixmap(QtGui.QPixmap("../client/assets/bin.svg"))
+        task_delete_button = QtWidgets.QPushButton()
+        task_delete_button.setIcon(icon2)
+        task_delete_button.setIconSize(QtCore.QSize(24, 24))
+        task_delete_button.setSizePolicy(size_policy)
+
         task_widget_layout.addWidget(task_label, 0, 0, 2, 1)
         task_widget_layout.addWidget(task_label_priority, 0, 1, 1, 1)
         task_widget_layout.addWidget(task_priority, 0, 2, 1, 1)
@@ -275,6 +289,7 @@ class MainWindow(QtWidgets.QWidget):
         task_widget_layout.addWidget(task_deadline, 0, 4, 2, 1)
         task_widget_layout.addWidget(task_details_button, 0, 5, 2, 1)
         task_widget_layout.addWidget(task_edit_button, 0, 6, 2, 1)
+        task_widget_layout.addWidget(task_delete_button, 0, 7, 2, 1)
 
         task_widget.setLayout(task_widget_layout)
         task_widget.setFixedHeight(50)

@@ -171,12 +171,20 @@ class TaskDetails(QtWidgets.QWidget):
         subtask_edit_button.setIconSize(QtCore.QSize(24, 24))
         subtask_edit_button.setSizePolicy(size_policy)
 
+        icon2 = QtGui.QIcon()
+        icon2.addPixmap(QtGui.QPixmap("../client/assets/bin.svg"))
+        subtask_delete_button = QtWidgets.QPushButton()
+        subtask_delete_button.setIcon(icon2)
+        subtask_delete_button.setIconSize(QtCore.QSize(24, 24))
+        subtask_delete_button.setSizePolicy(size_policy)
+
         widget_layout.addWidget(task_label)
         widget_layout.addWidget(task_label_state)
         widget_layout.addWidget(task_state)
         widget_layout.addWidget(task_label_deadline)
         widget_layout.addWidget(task_deadline)
         widget_layout.addWidget(subtask_edit_button)
+        widget_layout.addWidget(subtask_delete_button)
 
         task_widget.setLayout(widget_layout)
         task_widget.setFixedHeight(50)
