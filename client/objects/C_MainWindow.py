@@ -2,7 +2,7 @@ import ssl
 import sys
 from PyQt5 import QtWidgets, QtGui, QtCore
 
-from .C_Infobox import InfoBox, CreateTask, CreateLabel, TaskDetails
+from .C_Widgets import InfoBox, CreateTask, CreateLabel, TaskDetails
 
 
 class MainWindow(QtWidgets.QWidget):
@@ -117,11 +117,11 @@ class MainWindow(QtWidgets.QWidget):
         content_widget = QtWidgets.QWidget(self.scrollArea)
         self.scrollArea.setWidget(content_widget)
 
-        self.layout = QtWidgets.QVBoxLayout(content_widget)
-        self.layout.setAlignment(QtCore.Qt.AlignTop)
+        self.task_view_layout = QtWidgets.QVBoxLayout(content_widget)
+        self.task_view_layout.setAlignment(QtCore.Qt.AlignTop)
 
         for task in self.tasks:
-            self.layout.addWidget(self.add_tasks_to_scroll_area(task["task_id"], task["name"], str(task["state"]), str(task["priority"]), task["date"], task["description"]))
+            self.task_view_layout.addWidget(self.add_tasks_to_scroll_area(task["task_id"], task["name"], str(task["state"]), str(task["priority"]), task["date"], task["description"]))
 
         # Third line (horizontal layout)
 
@@ -171,11 +171,13 @@ class MainWindow(QtWidgets.QWidget):
 
         task_label_state = QtWidgets.QLabel("State:")
         task_label_state.setAlignment(QtCore.Qt.AlignRight)
-        task_state = QtWidgets.QLabel(state)
+        state_mapping = {1: "TODO", 2: "IN PROGRESS", 3: "FINISHED"}
+        task_state = QtWidgets.QLabel(state_mapping.get(int(state), "Error"))
 
         task_label_priority = QtWidgets.QLabel("Priority:")
         task_label_priority.setAlignment(QtCore.Qt.AlignRight)
-        task_priority = QtWidgets.QLabel(priority)
+        priority_mapping = {1: "LOW", 2: "NORMAL", 3: "HIGH"}
+        task_priority = QtWidgets.QLabel(priority_mapping.get(int(priority), "Error"))
 
         task_label_deadline = QtWidgets.QLabel("Deadline:")
         task_label_deadline.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight)
@@ -190,7 +192,7 @@ class MainWindow(QtWidgets.QWidget):
         task_button.setIcon(icon)
         task_button.setIconSize(QtCore.QSize(24, 24))
         task_button.setSizePolicy(sizePolicy)
-        task_button.clicked.connect(lambda: self.show_task_details(task_id, name, state, priority, date, description))
+        task_button.clicked.connect(lambda: self.show_task_details_dialog(task_id, name, state, priority, date, description))
 
         icon2 = QtGui.QIcon()
         icon2.addPixmap(QtGui.QPixmap("../client/assets/edit.svg"))
@@ -215,25 +217,20 @@ class MainWindow(QtWidgets.QWidget):
 
         return self.task_widget
 
-    def show_task_details(self, task_id, name, state, priority, date, description):
+    def show_task_details_dialog(self, task_id, name, state, priority, date, description):
         self.dialog = TaskDetails(task_id, name, state, priority, date, description, self.TCP_Session)
         self.dialog.show()
 
     def create_task_dialog(self):
-        dialog = CreateTask()
+        dialog = CreateTask(self.TCP_Session)
         result = dialog.exec_()
 
         if result == QtWidgets.QDialog.Accepted:
-            print("Champ 1:", dialog.edit1.text())
-            print("Champ 2:", dialog.edit2.text())
+            self.reload_tasks()
 
     def create_label_dialog(self):
         dialog = CreateLabel()
         result = dialog.exec_()
-
-        if result == QtWidgets.QDialog.Accepted:
-            print("Champ 1:", dialog.edit1.text())
-            print("Champ 2:", dialog.edit2.text())
 
     def closeEvent(self, event, **kwargs):
         reply = QtWidgets.QMessageBox.question(self, 'Quit', 'Are you sure you want to quit YeGrec ?',
@@ -261,7 +258,23 @@ class MainWindow(QtWidgets.QWidget):
         self.TCP_Session.send_data({
             "client": "get_tasks",
         })
-        return self.TCP_Session.get_data()["content"]
+        try:
+            result = self.TCP_Session.get_data()["content"]
+        except KeyError:
+            return []
+        else:
+            return result
+
+    def reload_tasks(self):
+        self.tasks = self.api_get_tasks()
+        while self.task_view_layout.count():
+            item = self.task_view_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+
+        for task in self.tasks:
+            self.task_view_layout.addWidget(self.add_tasks_to_scroll_area(task["task_id"], task["name"], str(task["state"]), str(task["priority"]), task["date"], task["description"]))
 
     @staticmethod
     def css_loader(filename):

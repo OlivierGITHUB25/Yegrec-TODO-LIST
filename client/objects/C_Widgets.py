@@ -19,52 +19,81 @@ class InfoBox(QtWidgets.QMessageBox):
 
 
 class CreateTask(QtWidgets.QDialog):
-    def __init__(self):
+    def __init__(self, TCP_Session):
         super().__init__()
+        self.TCP_Session = TCP_Session
 
         self.setStyleSheet(css_loader('../client/styles/styles.css'))
         self.setWindowTitle("Create task")
         self.setFixedWidth(400)
 
         self.label1 = QtWidgets.QLabel("Task name")
-        self.edit1 = QtWidgets.QLineEdit()
+        self.name_lineedit = QtWidgets.QLineEdit()
 
         self.label2 = QtWidgets.QLabel("State")
-        self.edit2 = QtWidgets.QComboBox()
-        self.edit2.addItems(["TODO", "In progress", "Finished"])
+        self.state_cmbobox = QtWidgets.QComboBox()
+        self.state_cmbobox.addItems(["TODO", "IN PROGRESS", "FINISHED"])
 
         self.label3 = QtWidgets.QLabel("Priority")
-        self.edit3 = QtWidgets.QComboBox()
-        self.edit3.addItems(["LOW", "NORMAL", "HIGH"])
+        self.priority_cmbobox = QtWidgets.QComboBox()
+        self.priority_cmbobox.addItems(["LOW", "NORMAL", "HIGH"])
 
         self.label4 = QtWidgets.QLabel("Date")
-        self.edit4 = QtWidgets.QDateEdit()
+        self.date_dateedit = QtWidgets.QDateTimeEdit()
+        self.date_dateedit.setDisplayFormat("yyyy-MM-dd HH:mm:ss")
 
         self.label5 = QtWidgets.QLabel("Description")
-        self.edit5 = QtWidgets.QPlainTextEdit()
+        self.description_plaintext = QtWidgets.QPlainTextEdit()
 
         self.ok_button = QtWidgets.QPushButton("Validate")
         self.cancel_button = QtWidgets.QPushButton("Cancel")
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.label1)
-        layout.addWidget(self.edit1)
+        layout.addWidget(self.name_lineedit)
         layout.addWidget(self.label2)
-        layout.addWidget(self.edit2)
+        layout.addWidget(self.state_cmbobox)
         layout.addWidget(self.label3)
-        layout.addWidget(self.edit3)
+        layout.addWidget(self.priority_cmbobox)
         layout.addWidget(self.label4)
-        layout.addWidget(self.edit4)
+        layout.addWidget(self.date_dateedit)
         layout.addWidget(self.label5)
-        layout.addWidget(self.edit5)
+        layout.addWidget(self.description_plaintext)
         layout.addWidget(self.ok_button)
         layout.addWidget(self.cancel_button)
 
         layout.setAlignment(QtCore.Qt.AlignTop)
         self.setLayout(layout)
 
-        self.ok_button.clicked.connect(self.accept)
+        self.ok_button.clicked.connect(self.api_send_data)
         self.cancel_button.clicked.connect(self.reject)
+
+    def api_send_data(self):
+        task_name = self.name_lineedit.text()
+        task_state = self.state_cmbobox.currentText()
+        state_mapping = {"TODO": 1, "IN PROGRESS": 2, "FINISHED": 3}
+        task_state = state_mapping.get(task_state)
+        task_priority = self.priority_cmbobox.currentText()
+        priority_mapping = {"LOW": 1, "NORMAL": 2, "HIGH": 3}
+        task_priority = priority_mapping.get(task_priority)
+        task_date = self.date_dateedit.text()
+        task_description = self.description_plaintext.toPlainText()
+
+        self.TCP_Session.send_data({
+            "client": "create_task",
+            "name": task_name,
+            "state": task_state,
+            "priority": task_priority,
+            "date": task_date,
+            "description": task_description,
+            "labels_id": [],
+            "users_id": []
+        })
+
+        if self.TCP_Session.get_data()["success"] == "yes":
+            self.accept()
+        else:
+            InfoBox("Value Error", QtWidgets.QMessageBox.Icon.Critical)
 
 
 class CreateLabel(QtWidgets.QDialog):
@@ -135,7 +164,7 @@ class TaskDetails(QtWidgets.QWidget):
 
         self.task_state_label = QtWidgets.QLabel("State")
         self.task_state_label.setProperty("class", "title")
-        state_mapping = {1: "TODO", 2: "In progress", 3: "Finished"}
+        state_mapping = {1: "TODO", 2: "IN PROGRESS", 3: "FINISHED"}
         self.task_state = QtWidgets.QLabel(state_mapping.get(int(self.state), "Error"))
         self.task_state.setProperty("class", "content")
 
@@ -244,4 +273,9 @@ class TaskDetails(QtWidgets.QWidget):
             "client": "get_subtasks",
             "task_id": self.task_id
         })
-        return self.TCP_Session.get_data()["content"]
+        try:
+            result = self.TCP_Session.get_data()["content"]
+        except KeyError:
+            return []
+        else:
+            return result

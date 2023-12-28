@@ -3,7 +3,7 @@ import sys
 from PyQt5 import QtWidgets
 
 from objects.C_TCP_Session import TCPSession
-from objects.C_Infobox import InfoBox
+from objects.C_Widgets import InfoBox
 from objects.C_MainWindow import MainWindow
 
 
