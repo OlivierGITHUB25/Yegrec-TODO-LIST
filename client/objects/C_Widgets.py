@@ -36,6 +36,7 @@ class Question(QtWidgets.QMessageBox):
 class TaskDetails(QtWidgets.QWidget):
     def __init__(self, task_id, name, state, priority, date, description, TCP_Session):
         super().__init__()
+        self.scroll_area_layout = None
         self.task_id = task_id
         self.name = name
         self.state = state
@@ -43,13 +44,14 @@ class TaskDetails(QtWidgets.QWidget):
         self.date = date
         self.description = description
         self.TCP_Session = TCP_Session
-        self.subtasks = self.api_get_subtasks()
+        self.subtasks = self.get_subtasks()
         self.init_ui()
 
     def init_ui(self):
         self.setStyleSheet(css_loader('../client/styles/styles.css'))
         self.setWindowTitle("Task detail")
-        self.setGeometry(100, 100, 1000, 600)
+        self.setGeometry(0, 0, 1000, 600)
+        self.center_window()
 
         task_name_label = QtWidgets.QLabel("Task name")
         task_name_label.setProperty("class", "title")
@@ -65,7 +67,7 @@ class TaskDetails(QtWidgets.QWidget):
         task_priority_label = QtWidgets.QLabel("Priority")
         task_priority_label.setProperty("class", "title")
         priority_mapping = {1: "LOW", 2: "NORMAL", 3: "HIGH"}
-        task_priority = QtWidgets.QLabel(priority_mapping.get(int(self.state), "Error"))
+        task_priority = QtWidgets.QLabel(priority_mapping.get(int(self.priority), "Error"))
         task_priority.setProperty("class", "content")
 
         task_date_label = QtWidgets.QLabel("Deadline")
@@ -99,25 +101,39 @@ class TaskDetails(QtWidgets.QWidget):
         subtask_label = QtWidgets.QLabel("Subtasks")
         subtask_label.setProperty("class", "title")
 
+        size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+
+        icon1 = QtGui.QIcon()
+        icon1.addPixmap(QtGui.QPixmap("../client/assets/task.svg"))
+        subtask_button = QtWidgets.QPushButton()
+        subtask_button.setIconSize(QtCore.QSize(24, 24))
+        subtask_button.setSizePolicy(size_policy)
+        subtask_button.setIcon(icon1)
+        subtask_button.clicked.connect(self.action_create_subtask)
+
         scroll_area = QtWidgets.QScrollArea()
         scroll_area.setWidgetResizable(True)
 
         content_widget = QtWidgets.QWidget(scroll_area)
         scroll_area.setWidget(content_widget)
 
-        scroll_area_layout = QtWidgets.QVBoxLayout(content_widget)
-        scroll_area_layout.setAlignment(QtCore.Qt.AlignTop)
+        self.scroll_area_layout = QtWidgets.QVBoxLayout(content_widget)
+        self.scroll_area_layout.setAlignment(QtCore.Qt.AlignTop)
 
         for subtask in self.subtasks:
-            scroll_area_layout.addWidget(self.add_subtasks_to_scroll_area(
+            self.scroll_area_layout.addWidget(self.add_subtasks_to_scroll_area(
                 subtask["name"],
                 str(subtask["state"]),
                 subtask["date"])
             )
 
+        top_layout = QtWidgets.QHBoxLayout()
+        top_layout.addWidget(subtask_label)
+        top_layout.addWidget(subtask_button)
+
         right_layout = QtWidgets.QVBoxLayout()
         right_layout.setAlignment(QtCore.Qt.AlignTop)
-        right_layout.addWidget(subtask_label)
+        right_layout.addLayout(top_layout)
         right_layout.addWidget(scroll_area)
 
         #######################
@@ -138,7 +154,8 @@ class TaskDetails(QtWidgets.QWidget):
 
         task_label_state = QtWidgets.QLabel("State:")
         task_label_state.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-        task_state = QtWidgets.QLabel(state)
+        state_mapping = {1: "TODO", 2: "IN PROGRESS", 3: "FINISHED"}
+        task_state = QtWidgets.QLabel(state_mapping.get(int(state), "Error"))
 
         task_label_deadline = QtWidgets.QLabel("Deadline:")
         task_label_deadline.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight)
@@ -167,7 +184,14 @@ class TaskDetails(QtWidgets.QWidget):
 
         return task_widget
 
-    def api_get_subtasks(self):
+    def action_create_subtask(self):
+        dialog = CreateSubTask(self.task_id, self.TCP_Session)
+        result = dialog.exec_()
+
+        if result == QtWidgets.QDialog.Accepted:
+            self.reload_subtasks()
+
+    def get_subtasks(self):
         self.TCP_Session.send_data({
             "client": "get_subtasks",
             "task_id": self.task_id
@@ -178,6 +202,27 @@ class TaskDetails(QtWidgets.QWidget):
             return []
         else:
             return result
+
+    def reload_subtasks(self):
+        self.subtasks = self.get_subtasks()
+        while self.scroll_area_layout.count():
+            item = self.scroll_area_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+
+        for subtask in self.subtasks:
+            self.scroll_area_layout.addWidget(self.add_subtasks_to_scroll_area(
+                subtask["name"],
+                str(subtask["state"]),
+                subtask["date"])
+            )
+
+    def center_window(self):
+        qr = self.frameGeometry()
+        cp = QtWidgets.QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
 
 
 class CreateTask(QtWidgets.QDialog):
@@ -280,6 +325,91 @@ class CreateTask(QtWidgets.QDialog):
             self.reject()
 
 
+class CreateSubTask(QtWidgets.QDialog):
+    def __init__(self, task_id, TCP_Session):
+        super().__init__()
+        self.description_plaintext = None
+        self.date_date_edit = None
+        self.priority_combobox = None
+        self.state_combobox = None
+        self.name_line_edit = None
+        self.task_id = task_id
+        self.TCP_Session = TCP_Session
+        self.layout = QtWidgets.QVBoxLayout()
+        self.layout.setAlignment(QtCore.Qt.AlignTop)
+        self.setLayout(self.layout)
+        self.init_ui()
+
+    def init_ui(self):
+        self.setFixedWidth(400)
+        self.setWindowTitle("Create subtask")
+        self.setStyleSheet(css_loader('../client/styles/styles.css'))
+
+        task_label = QtWidgets.QLabel("Subtask name")
+        self.name_line_edit = QtWidgets.QLineEdit()
+
+        state_label = QtWidgets.QLabel("State")
+        self.state_combobox = QtWidgets.QComboBox()
+        self.state_combobox.addItems(["TODO", "IN PROGRESS", "FINISHED"])
+
+        date_label = QtWidgets.QLabel("Date")
+        self.date_date_edit = QtWidgets.QDateTimeEdit()
+        self.date_date_edit.setDisplayFormat("yyyy-MM-dd HH:mm:ss")
+
+        ok_button = QtWidgets.QPushButton("Validate")
+        cancel_button = QtWidgets.QPushButton("Cancel")
+
+        self.layout.addWidget(task_label)
+        self.layout.addWidget(self.name_line_edit)
+        self.layout.addWidget(state_label)
+        self.layout.addWidget(self.state_combobox)
+        self.layout.addWidget(date_label)
+        self.layout.addWidget(self.date_date_edit)
+        self.layout.addWidget(ok_button)
+        self.layout.addWidget(cancel_button)
+
+        ok_button.clicked.connect(self.api_send_data)
+        cancel_button.clicked.connect(self.reject)
+
+    def api_send_data(self):
+        subtask_name = self.name_line_edit.text()
+        subtask_state = self.state_combobox.currentText()
+        state_mapping = {"TODO": 1, "IN PROGRESS": 2, "FINISHED": 3}
+        subtask_state = state_mapping.get(subtask_state)
+        subtask_date = self.date_date_edit.text()
+        task_id = self.task_id
+
+        if subtask_name == "" or subtask_state == "" or subtask_date == "":
+            return InfoBox("One or many field are blank", QtWidgets.QMessageBox.Icon.Warning)
+
+        try:
+            self.TCP_Session.send_data({
+                "client": "create_subtask",
+                "name": subtask_name,
+                "state": subtask_state,
+                "date": subtask_date,
+                "task_id": task_id,
+                "labels_id": []
+            })
+        except ssl.SSLEOFError:
+            InfoBox("Connection lost", QtWidgets.QMessageBox.Icon.Critical)
+            sys.exit()
+
+        result = self.TCP_Session.get_data()
+
+        if result["success"] == "yes":
+            InfoBox("Success", QtWidgets.QMessageBox.Icon.Information)
+            self.accept()
+        else:
+            if result["error"] == "InvalidJSONFormat" or result["error"] == "ValueError":
+                InfoBox("Value Error", QtWidgets.QMessageBox.Icon.Critical)
+            elif result["error"] == "InternalError":
+                InfoBox("Internal Error", QtWidgets.QMessageBox.Icon.Critical)
+            elif result["error"] == "NotAuthorized":
+                InfoBox("NotAuthorized", QtWidgets.QMessageBox.Icon.Critical)
+            self.reject()
+
+
 class CreateLabel(QtWidgets.QDialog):
     def __init__(self, TCP_Session):
         super().__init__()
@@ -356,3 +486,23 @@ class CreateLabel(QtWidgets.QDialog):
             elif result["error"] == "NotAuthorized":
                 InfoBox("NotAuthorized", QtWidgets.QMessageBox.Icon.Critical)
                 self.reject()
+
+
+class ListUsers(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.init_ui()
+
+    def init_ui(self):
+        self.setStyleSheet(css_loader('../client/styles/styles.css'))
+        self.setWindowTitle("User list")
+        self.setGeometry(0, 0, 400, 600)
+        self.center_window()
+        # TODO
+
+    def center_window(self):
+        qr = self.frameGeometry()
+        cp = QtWidgets.QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
+

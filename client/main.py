@@ -12,9 +12,6 @@ class LoginWindow(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         self.TCP_Session = None
-        self.setWindowTitle("YeGrec's Login Page")
-        self.setGeometry(100, 100, 400, 225)
-        self.setStyleSheet(self.css_loader('../client/styles/styles.css'))
         self.grid = QtWidgets.QGridLayout()
         self.setLayout(self.grid)
         self.init_connect()
@@ -35,6 +32,11 @@ class LoginWindow(QtWidgets.QWidget):
             self.show_login()
 
     def show_login(self):
+        self.setWindowTitle("YeGrec's Login Page")
+        self.setGeometry(0, 0, 400, 225)
+        self.setStyleSheet(self.css_loader('../client/styles/styles.css'))
+        self.center_window()
+
         username_label = QtWidgets.QLabel("Username")
         password_label = QtWidgets.QLabel("Password")
         self.username_input = QtWidgets.QLineEdit()
@@ -185,6 +187,12 @@ class LoginWindow(QtWidgets.QWidget):
             InfoBox("Connection lost", QtWidgets.QMessageBox.Icon.Critical)
         finally:
             event.accept()
+
+    def center_window(self):
+        qr = self.frameGeometry()
+        cp = QtWidgets.QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
 
     @staticmethod
     def css_loader(filename):

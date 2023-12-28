@@ -2,12 +2,13 @@ import ssl
 import sys
 from PyQt5 import QtWidgets, QtGui, QtCore
 
-from .C_Widgets import InfoBox, Question, CreateTask, CreateLabel, TaskDetails
+from .C_Widgets import InfoBox, Question, CreateTask, CreateLabel, TaskDetails, ListUsers
 
 
 class MainWindow(QtWidgets.QWidget):
     def __init__(self, tcp_session):
         super().__init__()
+        self.dialog = None
         self.TCP_Session = tcp_session
         self.general_layout_grid = QtWidgets.QGridLayout()
         self.setLayout(self.general_layout_grid)
@@ -18,9 +19,10 @@ class MainWindow(QtWidgets.QWidget):
 
     def init_ui(self):
         self.setWindowTitle("YeGrec's View")
-        self.setGeometry(100, 100, 1000, 700)
+        self.setGeometry(0, 0, 1000, 700)
         self.setWindowTitle("YeGrec's Todo List")
         self.setStyleSheet(self.css_loader('../client/styles/styles.css'))
+        self.center_window()
 
         # Icons definition
 
@@ -56,6 +58,7 @@ class MainWindow(QtWidgets.QWidget):
         self._action_delete_object.setIcon(icon4)
         self._action_list_users = QtWidgets.QAction("List users")
         self._action_list_users.setIcon(icon5)
+        self._action_list_users.triggered.connect(self.action_list_users)
         self._action_quit = QtWidgets.QAction("Quit")
         self._action_quit.setIcon(icon6)
         self._action_quit.triggered.connect(self.closeEvent)
@@ -104,6 +107,7 @@ class MainWindow(QtWidgets.QWidget):
         list_user_button = QtWidgets.QPushButton()
         list_user_button.setIcon(icon5)
         list_user_button.setIconSize(QtCore.QSize(32, 32))
+        list_user_button.clicked.connect(self.action_list_users)
 
         quit_button = QtWidgets.QPushButton()
         quit_button.setIcon(icon6)
@@ -184,6 +188,10 @@ class MainWindow(QtWidgets.QWidget):
     def action_create_label(self):
         dialog = CreateLabel(self.TCP_Session)
         dialog.exec_()
+
+    def action_list_users(self):
+        self.dialog = ListUsers()
+        self.dialog.show()
 
     def get_tasks(self):
         try:
@@ -294,6 +302,12 @@ class MainWindow(QtWidgets.QWidget):
         else:
             if type(event) is not bool:
                 event.ignore()
+
+    def center_window(self):
+        qr = self.frameGeometry()
+        cp = QtWidgets.QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
 
     @staticmethod
     def css_loader(filename):
