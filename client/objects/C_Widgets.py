@@ -122,6 +122,7 @@ class TaskDetails(QtWidgets.QWidget):
 
         for subtask in self.subtasks:
             self.scroll_area_layout.addWidget(self.add_subtasks_to_scroll_area(
+                subtask["subtask_id"],
                 subtask["name"],
                 str(subtask["state"]),
                 subtask["date"])
@@ -144,8 +145,7 @@ class TaskDetails(QtWidgets.QWidget):
 
         self.setLayout(horizontal_layout)
 
-    @staticmethod
-    def add_subtasks_to_scroll_area(name, state, date):
+    def add_subtasks_to_scroll_area(self, subtask_id, name, state, date):
         task_widget = QtWidgets.QWidget()
         task_widget.setFixedHeight(50)
         widget_layout = QtWidgets.QHBoxLayout()
@@ -177,6 +177,7 @@ class TaskDetails(QtWidgets.QWidget):
         subtask_delete_button.setIcon(icon2)
         subtask_delete_button.setIconSize(QtCore.QSize(24, 24))
         subtask_delete_button.setSizePolicy(size_policy)
+        subtask_delete_button.clicked.connect(lambda : self.delete_subtask(subtask_id))
 
         widget_layout.addWidget(task_label)
         widget_layout.addWidget(task_label_state)
@@ -214,6 +215,22 @@ class TaskDetails(QtWidgets.QWidget):
         else:
             return result
 
+    def delete_subtask(self, subtask_id):
+        try:
+            self.TCP_Session.send_data({
+                "client": "delete_subtask",
+                "subtask_id": subtask_id
+            })
+            result = self.TCP_Session.get_data()["success"]
+        except ssl.SSLEOFError:
+            InfoBox("Connection lost", QtWidgets.QMessageBox.Icon.Critical)
+            sys.exit()
+        else:
+            if result == "yes":
+                self.reload_subtasks()
+            else:
+                InfoBox("Internal error", QtWidgets.QMessageBox.Icon.Critical)
+
     def reload_subtasks(self):
         self.subtasks = self.get_subtasks()
         while self.scroll_area_layout.count():
@@ -224,6 +241,7 @@ class TaskDetails(QtWidgets.QWidget):
 
         for subtask in self.subtasks:
             self.scroll_area_layout.addWidget(self.add_subtasks_to_scroll_area(
+                subtask["subtask_id"],
                 subtask["name"],
                 str(subtask["state"]),
                 subtask["date"])

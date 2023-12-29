@@ -214,6 +214,22 @@ class MainWindow(QtWidgets.QWidget):
         else:
             return result
 
+    def delete_task(self, task_id):
+        try:
+            self.TCP_Session.send_data({
+                "client": "delete_task",
+                "task_id": task_id
+            })
+            result = self.TCP_Session.get_data()["success"]
+        except ssl.SSLEOFError:
+            InfoBox("Connection lost", QtWidgets.QMessageBox.Icon.Critical)
+            sys.exit()
+        else:
+            if result == "yes":
+                self.reload_tasks()
+            else:
+                InfoBox("Internal error", QtWidgets.QMessageBox.Icon.Critical)
+
     def reload_tasks(self):
         self.tasks = self.get_tasks()
         while self.task_view_layout.count():
@@ -279,6 +295,7 @@ class MainWindow(QtWidgets.QWidget):
         task_delete_button.setIcon(icon2)
         task_delete_button.setIconSize(QtCore.QSize(24, 24))
         task_delete_button.setSizePolicy(size_policy)
+        task_delete_button.clicked.connect(lambda: self.delete_task(task_id))
 
         task_widget_layout.addWidget(task_label, 0, 0, 2, 1)
         task_widget_layout.addWidget(task_label_priority, 0, 1, 1, 1)
