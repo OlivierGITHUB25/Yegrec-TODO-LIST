@@ -77,7 +77,7 @@ with socket.create_connection((hostname, 5000)) as sock:
 
         data = json.dumps({
                 "client": "get_subtasks",
-                "task_id": 1
+                "task_id": 7
         })
         conn.send(data.encode('utf-8'))
 

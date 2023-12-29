@@ -78,6 +78,11 @@ class Client:
             elif client_action == "update_label":
                 if self.update_label(output) == -1:
                     client_action = "DISCONNECT"
+            elif client_action == "delete_task":
+                if self.delete_task(output) == -1:
+                    client_action = "DISCONNECT"
+            elif client_action == "DISCONNECT":
+                continue
             else:
                 self.send_error("InvalidJSONFormat", "Invalid json format")
 
@@ -601,6 +606,55 @@ class Client:
             # Try to update the task attributes
             try:
                 self.__cursor.execute(sql, (name, color, label_id))
+                self.__database.commit()
+            except mysql.connector.Error as error:
+                return self.send_error("InternalError", error)
+
+            return self.send_success()
+
+        else:
+            return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
+
+    # OK
+    def delete_task(self, output):
+        if self.__auth:
+            try:
+                task_id = output.get("task_id", "")
+            except AttributeError as error:
+                return self.send_error("InvalidJSONFormat", error)
+            except TypeError as error:
+                return self.send_error("InvalidJSONFormat", error)
+            except ValueError as error:
+                return self.send_error("InvalidJSONFormat", error)
+
+            sql = ("SELECT User_idUser FROM User_has_Task "
+                   "WHERE User_idUser = %s AND Task_idTask = %s")
+
+            try:
+                self.__cursor.execute(sql, (self.__user_id, task_id))
+                result = self.__cursor.fetchall()
+            except mysql.connector.Error as error:
+                return self.send_error("InternalError", error)
+            if not result:
+                return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
+
+            sql = ("DELETE FROM Task_has_Label "
+                   "WHERE Task_idTask = %s")
+
+            sql_2 = ("DELETE FROM Sub_Task "
+                     "WHERE Task_idTask = %s")
+
+            sql_3 = ("DELETE FROM User_has_Task "
+                     "WHERE Task_idTask = %s")
+
+            sql_4 = ("DELETE FROM Task "
+                     "WHERE idTask = %s")
+
+            try:
+                self.__cursor.execute(sql, (task_id,))
+                self.__cursor.execute(sql_2, (task_id,))
+                self.__cursor.execute(sql_3, (task_id,))
+                self.__cursor.execute(sql_4, (task_id,))
                 self.__database.commit()
             except mysql.connector.Error as error:
                 return self.send_error("InternalError", error)
