@@ -200,14 +200,17 @@ class TaskDetails(QtWidgets.QWidget):
             self.reload_subtasks()
 
     def get_subtasks(self):
-        self.TCP_Session.send_data({
-            "client": "get_subtasks",
-            "task_id": self.task_id
-        })
         try:
+            self.TCP_Session.send_data({
+                "client": "get_subtasks",
+                "task_id": self.task_id
+            })
             result = self.TCP_Session.get_data()["content"]
         except KeyError:
             return []
+        except ssl.SSLEOFError:
+            InfoBox("Connection lost", QtWidgets.QMessageBox.Icon.Critical)
+            sys.exit()
         else:
             return result
 

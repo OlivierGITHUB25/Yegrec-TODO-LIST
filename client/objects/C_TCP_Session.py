@@ -32,7 +32,7 @@ class TCPSession:
             server_answer = ""
 
             while server_answer != "DISCONNECT":
-                buffer = self.__conn.recv(1024)
+                buffer = self.__conn.recv(8192)
                 received_message = buffer.decode('utf-8')
 
                 if received_message != previous_msg:
