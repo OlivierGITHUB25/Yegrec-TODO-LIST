@@ -81,6 +81,9 @@ class Client:
             elif client_action == "delete_task":
                 if self.delete_task(output) == -1:
                     client_action = "DISCONNECT"
+            elif client_action == "delete_subtask":
+                if self.delete_subtask(output) == -1:
+                    client_action = "DISCONNECT"
             elif client_action == "DISCONNECT":
                 continue
             else:
@@ -665,10 +668,64 @@ class Client:
             return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
 
     # OK
+    def delete_subtask(self, output):
+        if self.__auth:
+            try:
+                subtask_id = output.get("subtask_id", "")
+            except AttributeError as error:
+                return self.send_error("InvalidJSONFormat", error)
+            except TypeError as error:
+                return self.send_error("InvalidJSONFormat", error)
+            except ValueError as error:
+                return self.send_error("InvalidJSONFormat", error)
+
+            sql = ("SELECT Task_idTask FROM Sub_Task "
+                   "WHERE idSub_Task = %s")
+
+            try:
+                self.__cursor.execute(sql, (subtask_id,))
+                self.__database.commit()
+                result = self.__cursor.fetchall()
+            except mysql.connector.Error as error:
+                return self.send_error("InternalError", error)
+
+            task_id = result[0][0]
+
+            sql = ("SELECT User_idUser FROM User_has_Task "
+                   "WHERE User_idUser = %s AND Task_idTask = %s")
+
+            try:
+                self.__cursor.execute(sql, (self.__user_id, task_id))
+                result = self.__cursor.fetchall()
+            except mysql.connector.Error as error:
+                return self.send_error("InternalError", error)
+            if not result:
+                return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
+
+            sql = ("DELETE FROM Sub_Task_has_Label "
+                   "WHERE Sub_Task_idSub_Task = %s")
+
+            sql_2 = ("DELETE FROM Sub_Task "
+                     "WHERE idSub_Task = %s")
+
+            try:
+                self.__cursor.execute(sql, (subtask_id,))
+                self.__cursor.execute(sql_2, (subtask_id,))
+                self.__database.commit()
+            except mysql.connector.Error as error:
+                return self.send_error("InternalError", error)
+
+            return self.send_success()
+
+        else:
+            return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
+
+    # OK
     def write_log(self, message, event):
         with open("log.txt", "a") as log_file:
             date = datetime.datetime.now()
-            log_file.write(date.strftime(f"%Y:%m:%d %H:%M:%S {self.__address[0]}:{self.__address[1]} {event} : {message}\n"))
+            log_file.write(
+                date.strftime(f"%Y:%m:%d %H:%M:%S {self.__address[0]}:{self.__address[1]} {event} : {message}\n"))
 
     # OK
     def send_error(self, event, message, server_answer="response") -> int:
