@@ -81,6 +81,9 @@ class Client:
             elif client_action == "update_label":
                 if self.update_label(output) == -1:
                     client_action = "DISCONNECT"
+            elif client_action == "add_label_for_a_task":
+                if self.add_label_for_a_task(output) == -1:
+                    client_action = "DISCONNECT"
             elif client_action == "delete_task":
                 if self.delete_task(output) == -1:
                     client_action = "DISCONNECT"
@@ -570,6 +573,45 @@ class Client:
             # Try to update the task attributes
             try:
                 self.__cursor.execute(sql, (name, state, priority, date, description, task_id))
+                self.__database.commit()
+            except mysql.connector.Error as error:
+                return self.send_error("InternalError", error)
+
+            return self.send_success()
+
+        else:
+            return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
+
+    # OK
+    def add_label_for_a_task(self, output):
+        print("OK")
+        if self.__auth:
+            try:
+                task_id = int(output.get("task_id", ""))
+                label_id = int(output.get("label_id", ""))
+            except AttributeError as error:
+                return self.send_error("InvalidJSONFormat", error)
+            except TypeError as error:
+                return self.send_error("InvalidJSONFormat", error)
+            except ValueError as error:
+                return self.send_error("InvalidJSONFormat", error)
+
+            sql = ("SELECT User_idUser FROM User_has_Task "
+                   "WHERE User_idUser = %s AND Task_idTask = %s")
+
+            try:
+                self.__cursor.execute(sql, (self.__user_id, task_id))
+                result = self.__cursor.fetchall()
+            except mysql.connector.Error as error:
+                return self.send_error("InternalError", error)
+            if not result:
+                return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
+
+            sql = ("INSERT INTO Task_has_Label (Task_idTask, Label_idLabel) "
+                   "VALUES (%s, %s)")
+
+            try:
+                self.__cursor.execute(sql, (task_id, label_id))
                 self.__database.commit()
             except mysql.connector.Error as error:
                 return self.send_error("InternalError", error)
