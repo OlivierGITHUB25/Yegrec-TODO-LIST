@@ -34,7 +34,7 @@ class Question(QtWidgets.QMessageBox):
 
 
 class TaskDetails(QtWidgets.QWidget):
-    def __init__(self, task_id, name, state, priority, date, description, labels_id, TCP_Session):
+    def __init__(self, task_id, name, state, priority, date, description, TCP_Session):
         super().__init__()
         self.scroll_area_layout = None
         self.task_id = task_id
@@ -43,7 +43,6 @@ class TaskDetails(QtWidgets.QWidget):
         self.priority = priority
         self.date = date
         self.description = description
-        self.labels_id = labels_id
         self.TCP_Session = TCP_Session
         self.subtasks = self.get_subtasks()
         self.init_ui()
@@ -188,7 +187,7 @@ class TaskDetails(QtWidgets.QWidget):
         subtask_delete_button.setIcon(icon2)
         subtask_delete_button.setIconSize(QtCore.QSize(24, 24))
         subtask_delete_button.setSizePolicy(size_policy)
-        subtask_delete_button.clicked.connect(lambda : self.delete_subtask(subtask_id))
+        subtask_delete_button.clicked.connect(lambda: self.delete_subtask(subtask_id))
 
         widget_layout.addWidget(task_label)
         widget_layout.addWidget(task_label_state)
@@ -553,44 +552,41 @@ class LabelContainer(QtWidgets.QWidget):
         self.task_id = task_id
         self.TCP_Session = TCP_Session
 
-        self.tag_container = QtWidgets.QWidget()
-        self.tag_global_layout = QtWidgets.QVBoxLayout(self.tag_container)
-        self.tag_global_layout.setContentsMargins(0, 0, 0, 0)
-
-        main_layout = QtWidgets.QVBoxLayout(self)
-        main_layout.addWidget(self.tag_container)
+        self.tag_layout = QtWidgets.QVBoxLayout(self)
+        self.tag_layout.setContentsMargins(0, 0, 0, 0)
 
         self.get_labels()
 
-    def add_labels(self, labels_list = []):
+    def list_labels(self, labels_list):
         size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        tag_label = QtWidgets.QLabel()
-        tag_label.setProperty("class", "test")
-        tag_label.setSizePolicy(size_policy)
+        tag_button = QtWidgets.QLabel()
+        tag_button.setProperty("class", "labels")
+        tag_button.setSizePolicy(size_policy)
 
         layout_list = []
 
         h_layout = QtWidgets.QHBoxLayout()
         h_layout.setAlignment(QtCore.Qt.AlignLeft)
-        self.tag_global_layout.addLayout(h_layout)
+        self.tag_layout.addLayout(h_layout)
 
         if not labels_list:
-            self.tag_global_layout.addWidget(QtWidgets.QLabel("No labels"))
+            self.tag_layout.addWidget(QtWidgets.QLabel("No labels"))
         else:
             for i in labels_list:
-                tag_label = QtWidgets.QLabel()
-                tag_label.setProperty("class", "labels")
-                tag_label.setSizePolicy(size_policy)
-                tag_label.setText(i[1])
-                tag_label.setStyleSheet(f"background-color: {i[2]};")
+                tag_button = QtWidgets.QPushButton()
+                tag_button.setProperty("class", "labels")
+                tag_button.setSizePolicy(size_policy)
+                tag_button.setText(i[1])
+                tag_button.setStyleSheet(f"background-color: {i[2]};")
+                tag_button.clicked.connect(lambda: self.delete_label_from_task(i[0]))
 
                 if h_layout.count() < 4:
-                    h_layout.addWidget(tag_label)
+                    h_layout.addWidget(tag_button)
                 else:
                     layout_list.append(h_layout)
                     h_layout = QtWidgets.QHBoxLayout()
                     h_layout.setAlignment(QtCore.Qt.AlignLeft)
-                    self.tag_global_layout.addLayout(h_layout)
+                    self.tag_layout.addLayout(h_layout)
 
         h_layout = QtWidgets.QHBoxLayout()
         h_layout.setAlignment(QtCore.Qt.AlignLeft)
@@ -601,9 +597,10 @@ class LabelContainer(QtWidgets.QWidget):
         add_label_button.setIcon(icon)
         add_label_button.setIconSize(QtCore.QSize(24, 24))
         add_label_button.setSizePolicy(size_policy)
+        add_label_button.clicked.connect(self.add_label_for_task)
 
         h_layout.addWidget(add_label_button)
-        self.tag_global_layout.addLayout(h_layout)
+        self.tag_layout.addLayout(h_layout)
 
     def get_labels(self):
         try:
@@ -613,9 +610,133 @@ class LabelContainer(QtWidgets.QWidget):
             })
             result = self.TCP_Session.get_data()["content"]
         except KeyError:
-            self.add_labels()
+            self.list_labels([])
         except ssl.SSLEOFError:
             InfoBox("Connection lost", QtWidgets.QMessageBox.Icon.Critical)
             sys.exit()
         else:
-            self.add_labels(result)
+            self.list_labels(result)
+
+    def add_label_for_task(self):
+        dialog = AddLabel(self.task_id, self.TCP_Session)
+        result = dialog.exec_()
+        if result == QtWidgets.QDialog.Accepted:
+            self.reload_labels()
+
+    def delete_label_from_task(self, label_id):
+        try:
+            self.TCP_Session.send_data({
+                "client": "delete_label_from_task",
+                "task_id": self.task_id,
+                "label_id": label_id
+            })
+            result = self.TCP_Session.get_data()["content"]
+        except KeyError:
+            self.reload_labels()
+        except ssl.SSLEOFError:
+            InfoBox("Connection lost", QtWidgets.QMessageBox.Icon.Critical)
+            sys.exit()
+        else:
+            if result["success"] == "no":
+                InfoBox("Error", QtWidgets.QMessageBox.Icon.Critical)
+            else:
+                InfoBox("Success", QtWidgets.QMessageBox.Icon.Information)
+                self.reload_labels()
+
+    def reload_labels(self):
+        for i in reversed(range(self.tag_layout.count())):
+            item = self.tag_layout.itemAt(i)
+
+            if isinstance(item, QtWidgets.QHBoxLayout):
+                for j in reversed(range(item.count())):
+                    inner_item = item.itemAt(j)
+                    item.removeItem(inner_item)
+                    inner_widget = inner_item.widget()
+                    if inner_widget:
+                        inner_widget.setParent(None)
+            else:
+                self.tag_layout.removeItem(item)
+                widget = item.widget()
+                if widget:
+                    widget.setParent(None)
+
+        self.get_labels()
+
+
+class AddLabel(QtWidgets.QDialog):
+    def __init__(self, task_id, TCP_Session):
+        super().__init__()
+        self.label_line_edit = None
+        self.color_line_edit = None
+        self.task_id = task_id
+        self.TCP_Session = TCP_Session
+        self.layout = QtWidgets.QVBoxLayout()
+        self.layout.setAlignment(QtCore.Qt.AlignTop)
+        self.setLayout(self.layout)
+        self.init_ui()
+
+    def init_ui(self):
+        self.setStyleSheet(css_loader('../client/styles/styles.css'))
+        self.setWindowTitle("Add label")
+        self.setFixedWidth(300)
+
+        label_label = QtWidgets.QLabel("Label name")
+
+        self.id_mapping = []
+
+        self.combobox = QtWidgets.QComboBox()
+        for i in self.get_labels():
+            self.combobox.addItem(i[1])
+            self.id_mapping.append([i[0], i[1]])
+
+        ok_button = QtWidgets.QPushButton("Validate")
+        cancel_button = QtWidgets.QPushButton("Cancel")
+
+        self.layout.addWidget(label_label)
+        self.layout.addWidget(self.combobox)
+        self.layout.addWidget(ok_button)
+        self.layout.addWidget(cancel_button)
+
+        cancel_button.clicked.connect(self.reject)
+        ok_button.clicked.connect(self.send_data)
+
+    def get_labels(self):
+        try:
+            self.TCP_Session.send_data({
+                "client": "get_labels",
+            })
+            result = self.TCP_Session.get_data()["content"]
+        except KeyError:
+            return []
+        except ssl.SSLEOFError:
+            InfoBox("Connection lost", QtWidgets.QMessageBox.Icon.Critical)
+            sys.exit()
+        else:
+            return result
+
+    def send_data(self):
+        combobox_value = self.combobox.currentText()
+        label_id = 0
+        for i in self.id_mapping:
+            if i[1] == combobox_value:
+                label_id = i[0]
+
+        if label_id:
+            try:
+                self.TCP_Session.send_data({
+                    "client": "add_label_for_a_task",
+                    "task_id": self.task_id,
+                    "label_id": label_id
+                })
+                result = self.TCP_Session.get_data()
+            except KeyError:
+                InfoBox("Internal Error", QtWidgets.QMessageBox.Icon.Critical)
+                self.accept()
+            except ssl.SSLEOFError:
+                InfoBox("Connection lost", QtWidgets.QMessageBox.Icon.Critical)
+                sys.exit()
+            else:
+                if result["success"] == "no":
+                    InfoBox("Label already used", QtWidgets.QMessageBox.Icon.Critical)
+                else:
+                    self.accept()
