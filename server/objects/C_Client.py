@@ -66,6 +66,9 @@ class Client:
             elif client_action == "get_labels":
                 if self.get_labels() == -1:
                     client_action = "DISCONNECT"
+            elif client_action == "get_labels_for_a_task":
+                if self.get_labels_for_a_task(output) == -1:
+                    client_action = "DISCONNECT"
             elif client_action == "get_users":
                 if self.get_users() == -1:
                     client_action = "DISCONNECT"
@@ -462,8 +465,49 @@ class Client:
             except mysql.connector.Error as error:
                 return self.send_error("InternalError", error)
 
-            return self.send_success([result for result in self.__cursor.fetchall()])
+            return self.send_success(self.__cursor.fetchall())
 
+        else:
+            return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
+
+    # OK
+    def get_labels_for_a_task(self, output):
+        if self.__auth:
+            try:
+                task_id = int(output.get("task_id", ""))
+            except AttributeError as error:
+                return self.send_error("InvalidJSONFormat", error)
+            except TypeError as error:
+                return self.send_error("InvalidJSONFormat", error)
+            except ValueError as error:
+                return self.send_error("InvalidJSONFormat", error)
+
+            sql = ("SELECT User_idUser FROM User_has_Task "
+                   "WHERE User_idUser = %s AND Task_idTask = %s")
+
+            try:
+                self.__cursor.execute(sql, (self.__user_id, task_id))
+                result = self.__cursor.fetchall()
+            except mysql.connector.Error as error:
+                return self.send_error("InternalError", error)
+            if not result:
+                return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
+
+            sql = ("SELECT Label.* FROM Task "
+                   "JOIN Task_has_Label ON Task.idTask = Task_has_Label.Task_idTask "
+                   "JOIN Label ON Task_has_Label.Label_idLabel = Label.idlabel "
+                   "WHERE Task.idTask = %s")
+
+            try:
+                self.__cursor.execute(sql, (task_id,))
+                result = self.__cursor.fetchall()
+            except mysql.connector.Error as error:
+                return self.send_error("InternalError", error)
+            if not result:
+                return self.send_success()
+            else:
+                result = list(result)
+                return self.send_success(result)
         else:
             return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
 
