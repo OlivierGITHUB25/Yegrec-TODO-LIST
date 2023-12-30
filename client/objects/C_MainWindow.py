@@ -2,7 +2,7 @@ import ssl
 import sys
 from PyQt5 import QtWidgets, QtGui, QtCore
 
-from .C_Widgets import InfoBox, Question, CreateTask, CreateLabel, TaskDetails, ListUsers
+from .C_Widgets import InfoBox, Question, CreateTask, CreateLabel, TaskDetails, ListUsers, UpdateTask
 
 
 class MainWindow(QtWidgets.QWidget):
@@ -188,6 +188,13 @@ class MainWindow(QtWidgets.QWidget):
         if result == QtWidgets.QDialog.Accepted:
             self.reload_tasks()
 
+    def action_update_task(self, task_id, name, state, priority, date, description):
+        dialog = UpdateTask(task_id, name, state, priority, date, description, self.TCP_Session)
+        result = dialog.exec_()
+
+        if result == QtWidgets.QDialog.Accepted:
+            self.reload_tasks()
+
     def action_create_label(self):
         dialog = CreateLabel(self.TCP_Session)
         dialog.exec_()
@@ -284,6 +291,9 @@ class MainWindow(QtWidgets.QWidget):
         task_edit_button.setIcon(icon2)
         task_edit_button.setIconSize(QtCore.QSize(24, 24))
         task_edit_button.setSizePolicy(size_policy)
+        task_edit_button.clicked.connect(
+            lambda: self.action_update_task(task_id, name, state, priority, date, description)
+        )
 
         icon2 = QtGui.QIcon()
         icon2.addPixmap(QtGui.QPixmap("../client/assets/bin.svg"))

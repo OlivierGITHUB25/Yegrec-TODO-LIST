@@ -36,7 +36,6 @@ class Question(QtWidgets.QMessageBox):
 class TaskDetails(QtWidgets.QWidget):
     def __init__(self, task_id, name, state, priority, date, description, TCP_Session):
         super().__init__()
-        self.scroll_area_layout = None
         self.task_id = task_id
         self.name = name
         self.state = state
@@ -180,6 +179,7 @@ class TaskDetails(QtWidgets.QWidget):
         subtask_edit_button.setIcon(icon2)
         subtask_edit_button.setIconSize(QtCore.QSize(24, 24))
         subtask_edit_button.setSizePolicy(size_policy)
+        subtask_edit_button.clicked.connect(lambda: self.action_update_subtask(subtask_id, name, state, date))
 
         icon2 = QtGui.QIcon()
         icon2.addPixmap(QtGui.QPixmap("../client/assets/bin.svg"))
@@ -205,6 +205,13 @@ class TaskDetails(QtWidgets.QWidget):
 
     def action_create_subtask(self):
         dialog = CreateSubTask(self.task_id, self.TCP_Session)
+        result = dialog.exec_()
+
+        if result == QtWidgets.QDialog.Accepted:
+            self.reload_subtasks()
+
+    def action_update_subtask(self, subtask_id, name, state, date):
+        dialog = UpdateSubTask(self.task_id, subtask_id, name, state, date, self.TCP_Session)
         result = dialog.exec_()
 
         if result == QtWidgets.QDialog.Accepted:
@@ -267,11 +274,6 @@ class TaskDetails(QtWidgets.QWidget):
 class CreateTask(QtWidgets.QDialog):
     def __init__(self, TCP_Session):
         super().__init__()
-        self.description_plaintext = None
-        self.date_date_edit = None
-        self.priority_combobox = None
-        self.state_combobox = None
-        self.name_line_edit = None
         self.TCP_Session = TCP_Session
         self.layout = QtWidgets.QVBoxLayout()
         self.layout.setAlignment(QtCore.Qt.AlignTop)
@@ -361,17 +363,118 @@ class CreateTask(QtWidgets.QDialog):
                 InfoBox("Internal Error", QtWidgets.QMessageBox.Icon.Critical)
             elif result["error"] == "NotAuthorized":
                 InfoBox("NotAuthorized", QtWidgets.QMessageBox.Icon.Critical)
-            self.reject()
+
+
+class UpdateTask(QtWidgets.QDialog):
+    def __init__(self, task_id, name, state, priority, date, description, TCP_Session):
+        super().__init__()
+        self.task_id = task_id
+        self.name = name
+        self.state = state
+        self.priority = priority
+        self.date = date
+        self.description = description
+        self.TCP_Session = TCP_Session
+        self.layout = QtWidgets.QVBoxLayout()
+        self.layout.setAlignment(QtCore.Qt.AlignTop)
+        self.setLayout(self.layout)
+        self.init_ui()
+
+    def init_ui(self):
+        self.setFixedWidth(400)
+        self.setWindowTitle("Update task")
+        self.setStyleSheet(css_loader('../client/styles/styles.css'))
+
+        task_label = QtWidgets.QLabel("Task name")
+        self.name_line_edit = QtWidgets.QLineEdit()
+        self.name_line_edit.setText(self.name)
+
+        state_label = QtWidgets.QLabel("State")
+        self.state_combobox = QtWidgets.QComboBox()
+        self.state_combobox.addItems(["TODO", "IN PROGRESS", "FINISHED"])
+        self.state_combobox.setCurrentIndex(int(self.state) - 1)
+
+        priority_label = QtWidgets.QLabel("Priority")
+        self.priority_combobox = QtWidgets.QComboBox()
+        self.priority_combobox.addItems(["LOW", "NORMAL", "HIGH"])
+        self.priority_combobox.setCurrentIndex(int(self.priority) - 1)
+
+        date_label = QtWidgets.QLabel("Date")
+        self.date_date_edit = QtWidgets.QDateTimeEdit()
+        self.date_date_edit.setDisplayFormat("yyyy-MM-dd HH:mm:ss")
+        date_time = QtCore.QDateTime().fromString(self.date, "yyyy-MM-dd HH:mm:ss")
+        self.date_date_edit.setDateTime(date_time)
+
+        description_label = QtWidgets.QLabel("Description")
+        self.description_plaintext = QtWidgets.QPlainTextEdit()
+        self.description_plaintext.setPlainText(self.description)
+
+        ok_button = QtWidgets.QPushButton("Validate")
+        cancel_button = QtWidgets.QPushButton("Cancel")
+
+        self.layout.addWidget(task_label)
+        self.layout.addWidget(self.name_line_edit)
+        self.layout.addWidget(state_label)
+        self.layout.addWidget(self.state_combobox)
+        self.layout.addWidget(priority_label)
+        self.layout.addWidget(self.priority_combobox)
+        self.layout.addWidget(date_label)
+        self.layout.addWidget(self.date_date_edit)
+        self.layout.addWidget(description_label)
+        self.layout.addWidget(self.description_plaintext)
+        self.layout.addWidget(ok_button)
+        self.layout.addWidget(cancel_button)
+
+        ok_button.clicked.connect(self.api_send_data)
+        cancel_button.clicked.connect(self.reject)
+
+    def api_send_data(self):
+        task_name = self.name_line_edit.text()
+        task_state = self.state_combobox.currentText()
+        state_mapping = {"TODO": 1, "IN PROGRESS": 2, "FINISHED": 3}
+        task_state = state_mapping.get(task_state)
+        task_priority = self.priority_combobox.currentText()
+        priority_mapping = {"LOW": 1, "NORMAL": 2, "HIGH": 3}
+        task_priority = priority_mapping.get(task_priority)
+        task_date = self.date_date_edit.text()
+        task_description = self.description_plaintext.toPlainText()
+
+        if task_name == "" or task_state == "" or task_priority == "" or task_date == "" or task_description == "":
+            return InfoBox("One or many field are blank", QtWidgets.QMessageBox.Icon.Warning)
+
+        try:
+            self.TCP_Session.send_data({
+                "client": "update_task",
+                "task_id": self.task_id,
+                "name": task_name,
+                "state": task_state,
+                "priority": task_priority,
+                "date": task_date,
+                "description": task_description,
+                "labels_id": [],
+                "users_id": []
+            })
+        except ssl.SSLEOFError:
+            InfoBox("Connection lost", QtWidgets.QMessageBox.Icon.Critical)
+            sys.exit()
+
+        result = self.TCP_Session.get_data()
+
+        if result["success"] == "yes":
+            InfoBox("Success", QtWidgets.QMessageBox.Icon.Information)
+            self.accept()
+        else:
+            if result["error"] == "InvalidJSONFormat" or result["error"] == "ValueError":
+                InfoBox("Value Error", QtWidgets.QMessageBox.Icon.Critical)
+            elif result["error"] == "InternalError":
+                InfoBox("Internal Error", QtWidgets.QMessageBox.Icon.Critical)
+            elif result["error"] == "NotAuthorized":
+                InfoBox("NotAuthorized", QtWidgets.QMessageBox.Icon.Critical)
 
 
 class CreateSubTask(QtWidgets.QDialog):
     def __init__(self, task_id, TCP_Session):
         super().__init__()
-        self.description_plaintext = None
-        self.date_date_edit = None
-        self.priority_combobox = None
-        self.state_combobox = None
-        self.name_line_edit = None
         self.task_id = task_id
         self.TCP_Session = TCP_Session
         self.layout = QtWidgets.QVBoxLayout()
@@ -449,11 +552,97 @@ class CreateSubTask(QtWidgets.QDialog):
             self.reject()
 
 
+class UpdateSubTask(QtWidgets.QDialog):
+    def __init__(self, task_id, subtask_id, name, state, date, TCP_Session):
+        super().__init__()
+        self.task_id = task_id
+        self.subtask_id = subtask_id
+        self.name = name
+        self.state = state
+        self.date = date
+        self.TCP_Session = TCP_Session
+        self.layout = QtWidgets.QVBoxLayout()
+        self.layout.setAlignment(QtCore.Qt.AlignTop)
+        self.setLayout(self.layout)
+        self.init_ui()
+
+    def init_ui(self):
+        self.setFixedWidth(400)
+        self.setWindowTitle("Update subtask")
+        self.setStyleSheet(css_loader('../client/styles/styles.css'))
+
+        task_label = QtWidgets.QLabel("Task name")
+        self.name_line_edit = QtWidgets.QLineEdit()
+        self.name_line_edit.setText(self.name)
+
+        state_label = QtWidgets.QLabel("State")
+        self.state_combobox = QtWidgets.QComboBox()
+        self.state_combobox.addItems(["TODO", "IN PROGRESS", "FINISHED"])
+        self.state_combobox.setCurrentIndex(int(self.state) - 1)
+
+        date_label = QtWidgets.QLabel("Date")
+        self.date_date_edit = QtWidgets.QDateTimeEdit()
+        self.date_date_edit.setDisplayFormat("yyyy-MM-dd HH:mm:ss")
+        date_time = QtCore.QDateTime().fromString(self.date, "yyyy-MM-dd HH:mm:ss")
+        self.date_date_edit.setDateTime(date_time)
+
+        ok_button = QtWidgets.QPushButton("Validate")
+        cancel_button = QtWidgets.QPushButton("Cancel")
+
+        self.layout.addWidget(task_label)
+        self.layout.addWidget(self.name_line_edit)
+        self.layout.addWidget(state_label)
+        self.layout.addWidget(self.state_combobox)
+        self.layout.addWidget(date_label)
+        self.layout.addWidget(self.date_date_edit)
+        self.layout.addWidget(ok_button)
+        self.layout.addWidget(cancel_button)
+
+        ok_button.clicked.connect(self.api_send_data)
+        cancel_button.clicked.connect(self.reject)
+
+    def api_send_data(self):
+        task_name = self.name_line_edit.text()
+        task_state = self.state_combobox.currentText()
+        state_mapping = {"TODO": 1, "IN PROGRESS": 2, "FINISHED": 3}
+        task_state = state_mapping.get(task_state)
+        task_date = self.date_date_edit.text()
+
+        if task_name == "" or task_state == "" or task_date == "":
+            return InfoBox("One or many field are blank", QtWidgets.QMessageBox.Icon.Warning)
+
+        try:
+            self.TCP_Session.send_data({
+                "client": "update_subtask",
+                "task_id": self.task_id,
+                "subtask_id": self.subtask_id,
+                "name": task_name,
+                "state": task_state,
+                "date": task_date,
+                "labels_id": [],
+                "users_id": []
+            })
+        except ssl.SSLEOFError:
+            InfoBox("Connection lost", QtWidgets.QMessageBox.Icon.Critical)
+            sys.exit()
+
+        result = self.TCP_Session.get_data()
+
+        if result["success"] == "yes":
+            InfoBox("Success", QtWidgets.QMessageBox.Icon.Information)
+            self.accept()
+        else:
+            if result["error"] == "InvalidJSONFormat" or result["error"] == "ValueError":
+                InfoBox("Value Error", QtWidgets.QMessageBox.Icon.Critical)
+            elif result["error"] == "InternalError":
+                InfoBox("Internal Error", QtWidgets.QMessageBox.Icon.Critical)
+            elif result["error"] == "NotAuthorized":
+                InfoBox("NotAuthorized", QtWidgets.QMessageBox.Icon.Critical)
+
+
 class CreateLabel(QtWidgets.QDialog):
     def __init__(self, TCP_Session):
         super().__init__()
-        self.label_line_edit = None
-        self.color_line_edit = None
         self.TCP_Session = TCP_Session
         self.layout = QtWidgets.QVBoxLayout()
         self.layout.setAlignment(QtCore.Qt.AlignTop)
@@ -537,7 +726,8 @@ class ListUsers(QtWidgets.QWidget):
         self.setWindowTitle("User list")
         self.setGeometry(0, 0, 400, 600)
         self.center_window()
-        # TODO
+        label = QtWidgets.QLabel(self)
+        label.setText("Comming Soon")
 
     def center_window(self):
         qr = self.frameGeometry()
