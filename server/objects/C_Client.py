@@ -90,6 +90,9 @@ class Client:
             elif client_action == "delete_subtask":
                 if self.delete_subtask(output) == -1:
                     client_action = "DISCONNECT"
+            elif client_action == "delete_label_from_task":
+                if self.delete_label_from_task(output) == -1:
+                    client_action = "DISCONNECT"
             elif client_action == "DISCONNECT":
                 continue
             else:
@@ -584,7 +587,6 @@ class Client:
 
     # OK
     def add_label_for_a_task(self, output):
-        print("OK")
         if self.__auth:
             try:
                 task_id = int(output.get("task_id", ""))
@@ -797,6 +799,44 @@ class Client:
             try:
                 self.__cursor.execute(sql, (subtask_id,))
                 self.__cursor.execute(sql_2, (subtask_id,))
+                self.__database.commit()
+            except mysql.connector.Error as error:
+                return self.send_error("InternalError", error)
+
+            return self.send_success()
+
+        else:
+            return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
+
+    # OK
+    def delete_label_from_task(self, output):
+        if self.__auth:
+            try:
+                task_id = int(output.get("task_id", ""))
+                label_id = int(output.get("label_id", ""))
+            except AttributeError as error:
+                return self.send_error("InvalidJSONFormat", error)
+            except TypeError as error:
+                return self.send_error("InvalidJSONFormat", error)
+            except ValueError as error:
+                return self.send_error("InvalidJSONFormat", error)
+
+            sql = ("SELECT User_idUser FROM User_has_Task "
+                   "WHERE User_idUser = %s AND Task_idTask = %s")
+
+            try:
+                self.__cursor.execute(sql, (self.__user_id, task_id))
+                result = self.__cursor.fetchall()
+            except mysql.connector.Error as error:
+                return self.send_error("InternalError", error)
+            if not result:
+                return self.send_error("NotAuthorized", "NOT_AUTHORIZED")
+
+            sql = ("DELETE FROM YeGrec.Task_has_Label "
+                   "WHERE Task_idTask = %s AND Label_idLabel = %s")
+
+            try:
+                self.__cursor.execute(sql, (task_id, label_id))
                 self.__database.commit()
             except mysql.connector.Error as error:
                 return self.send_error("InternalError", error)
