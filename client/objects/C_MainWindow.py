@@ -138,7 +138,8 @@ class MainWindow(QtWidgets.QWidget):
                 str(task["state"]),
                 str(task["priority"]),
                 task["date"],
-                task["description"])
+                task["description"],
+                task["labels_id"])
             )
 
         # Third line (horizontal layout)
@@ -180,10 +181,6 @@ class MainWindow(QtWidgets.QWidget):
         self.verticalLayout.addLayout(horizontal_layout)
         self.verticalLayout.addWidget(scroll_area)
         self.verticalLayout.addLayout(horizontal_layout_2)
-
-    def action_task_details(self, task_id, name, state, priority, date, description):
-        self.dialog = TaskDetails(task_id, name, state, priority, date, description, self.TCP_Session)
-        self.dialog.show()
 
     def action_create_task(self):
         dialog = CreateTask(self.TCP_Session)
@@ -248,7 +245,7 @@ class MainWindow(QtWidgets.QWidget):
                 task["description"])
             )
 
-    def add_tasks_to_scroll_area(self, task_id, name, state, priority, date, description):
+    def add_tasks_to_scroll_area(self, task_id, name, state, priority, date, description, labels_id):
         task_widget = QtWidgets.QWidget()
         task_widget.setFixedHeight(50)
         task_widget_layout = QtWidgets.QGridLayout()
@@ -279,7 +276,7 @@ class MainWindow(QtWidgets.QWidget):
         task_details_button.setIconSize(QtCore.QSize(24, 24))
         task_details_button.setSizePolicy(size_policy)
         task_details_button.clicked.connect(
-            lambda: self.action_task_details(task_id, name, state, priority, date, description)
+            lambda: self.action_task_details(task_id, name, state, priority, date, description, labels_id)
         )
 
         icon2 = QtGui.QIcon()
@@ -313,6 +310,10 @@ class MainWindow(QtWidgets.QWidget):
         task_widget.setObjectName("task")
 
         return task_widget
+
+    def action_task_details(self, task_id, name, state, priority, date, description, labels_id):
+        self.dialog = TaskDetails(task_id, name, state, priority, date, description, labels_id, self.TCP_Session)
+        self.dialog.show()
 
     def closeEvent(self, event, **kwargs):
         question = Question("Quit", "Are you sure you want to quit YeGrec ?")

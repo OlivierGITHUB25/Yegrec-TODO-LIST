@@ -34,7 +34,7 @@ class Question(QtWidgets.QMessageBox):
 
 
 class TaskDetails(QtWidgets.QWidget):
-    def __init__(self, task_id, name, state, priority, date, description, TCP_Session):
+    def __init__(self, task_id, name, state, priority, date, description, labels_id, TCP_Session):
         super().__init__()
         self.scroll_area_layout = None
         self.task_id = task_id
@@ -43,6 +43,7 @@ class TaskDetails(QtWidgets.QWidget):
         self.priority = priority
         self.date = date
         self.description = description
+        self.labels_id = labels_id
         self.TCP_Session = TCP_Session
         self.subtasks = self.get_subtasks()
         self.init_ui()
@@ -50,7 +51,7 @@ class TaskDetails(QtWidgets.QWidget):
     def init_ui(self):
         self.setStyleSheet(css_loader('../client/styles/styles.css'))
         self.setWindowTitle("Task detail")
-        self.setGeometry(0, 0, 1000, 600)
+        self.setGeometry(0, 0, 1300, 800)
         self.center_window()
 
         task_name_label = QtWidgets.QLabel("Task name")
@@ -82,6 +83,14 @@ class TaskDetails(QtWidgets.QWidget):
         task_description.setReadOnly(True)
         task_description.setProperty("class", "content")
 
+        #########################
+
+        task_labels_label = QtWidgets.QLabel("Labels")
+        task_labels_label.setProperty("class", "title")
+        task_labels = LabelContainer(self.task_id, self.TCP_Session)
+
+        #########################
+
         left_layout = QtWidgets.QVBoxLayout()
         left_layout.addWidget(task_name_label)
         left_layout.addWidget(task_name)
@@ -91,6 +100,8 @@ class TaskDetails(QtWidgets.QWidget):
         left_layout.addWidget(task_priority)
         left_layout.addWidget(task_date_label)
         left_layout.addWidget(task_date)
+        left_layout.addWidget(task_labels_label)
+        left_layout.addWidget(task_labels)
         left_layout.addWidget(task_description_label)
         left_layout.addWidget(task_description)
 
@@ -535,3 +546,76 @@ class ListUsers(QtWidgets.QWidget):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
+
+class LabelContainer(QtWidgets.QWidget):
+    def __init__(self, task_id, TCP_Session):
+        super().__init__()
+        self.task_id = task_id
+        self.TCP_Session = TCP_Session
+
+        self.tag_container = QtWidgets.QWidget()
+        self.tag_global_layout = QtWidgets.QVBoxLayout(self.tag_container)
+        self.tag_global_layout.setContentsMargins(0, 0, 0, 0)
+
+        main_layout = QtWidgets.QVBoxLayout(self)
+        main_layout.addWidget(self.tag_container)
+
+        self.get_labels()
+
+    def add_labels(self, labels_list = []):
+        size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        tag_label = QtWidgets.QLabel()
+        tag_label.setProperty("class", "test")
+        tag_label.setSizePolicy(size_policy)
+
+        layout_list = []
+
+        h_layout = QtWidgets.QHBoxLayout()
+        h_layout.setAlignment(QtCore.Qt.AlignLeft)
+        self.tag_global_layout.addLayout(h_layout)
+
+        if not labels_list:
+            self.tag_global_layout.addWidget(QtWidgets.QLabel("No labels"))
+        else:
+            for i in labels_list:
+                tag_label = QtWidgets.QLabel()
+                tag_label.setProperty("class", "labels")
+                tag_label.setSizePolicy(size_policy)
+                tag_label.setText(i[1])
+                tag_label.setStyleSheet(f"background-color: {i[2]};")
+
+                if h_layout.count() < 4:
+                    h_layout.addWidget(tag_label)
+                else:
+                    layout_list.append(h_layout)
+                    h_layout = QtWidgets.QHBoxLayout()
+                    h_layout.setAlignment(QtCore.Qt.AlignLeft)
+                    self.tag_global_layout.addLayout(h_layout)
+
+        h_layout = QtWidgets.QHBoxLayout()
+        h_layout.setAlignment(QtCore.Qt.AlignLeft)
+
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap("../client/assets/tag.svg"))
+        add_label_button = QtWidgets.QPushButton()
+        add_label_button.setIcon(icon)
+        add_label_button.setIconSize(QtCore.QSize(24, 24))
+        add_label_button.setSizePolicy(size_policy)
+
+        h_layout.addWidget(add_label_button)
+        self.tag_global_layout.addLayout(h_layout)
+
+    def get_labels(self):
+        try:
+            self.TCP_Session.send_data({
+                "client": "get_labels_for_a_task",
+                "task_id": self.task_id
+            })
+            result = self.TCP_Session.get_data()["content"]
+        except KeyError:
+            self.add_labels()
+        except ssl.SSLEOFError:
+            InfoBox("Connection lost", QtWidgets.QMessageBox.Icon.Critical)
+            sys.exit()
+        else:
+            self.add_labels(result)

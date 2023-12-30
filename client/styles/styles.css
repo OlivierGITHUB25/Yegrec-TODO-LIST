@@ -8,7 +8,7 @@ QPushButton:hover {
     background-color: #d9d9d9;
 }
 
-QLineEdit, QComboBox, QDateTimeEdit{
+QLineEdit, QComboBox, QDateTimeEdit, .labels{
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
