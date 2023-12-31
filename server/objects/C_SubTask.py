@@ -2,12 +2,11 @@ from datetime import datetime
 
 
 class SubTask:
-    def __init__(self, name, state, date, task_id, subtask_id, labels: list = None):
+    def __init__(self, name, state, date, task_id, labels: list = None):
         self.__name = name
         self.__state = state
         self.__date = date
         self.__task_id = task_id
-        self.__subtask_id = subtask_id
         self.__labels = labels
         self._validate_args()
 
@@ -38,9 +37,6 @@ class SubTask:
                 raise ValueError("ValueError")
 
         if not isinstance(self.__task_id, int):  # task_id verifications
-            raise TypeError("InvalidJSONFormat")
-
-        if not isinstance(self.__subtask_id, int):  # task_id verifications
             raise TypeError("InvalidJSONFormat")
 
         if not isinstance(self.__labels, list):  # labels verifications

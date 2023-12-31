@@ -635,7 +635,7 @@ class Client:
                 state = output.get("state", "")
                 date = output.get("date", "")
                 labels_id = output.get("labels_id", [])
-                SubTask(name, state, date, task_id, subtask_id, labels_id)
+                SubTask(name, state, date, task_id, labels_id)
             except AttributeError as error:
                 return self.send_error("InvalidJSONFormat", error)
             except TypeError as error:
